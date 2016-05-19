@@ -9,6 +9,17 @@
 
 namespace larlite {
 
+  SearchPFPartHierarchy::SearchPFPartHierarchy()
+  {
+    _name="SearchPFPartHierarchy";
+    _fout=0;
+    _verbose = true;
+    _n_tracks = 0;
+    _n_showers = 0;
+    _filter_showers = false;
+    _filter_tracks  = false;
+  }
+
   bool SearchPFPartHierarchy::initialize() {
 
     return true;
@@ -16,9 +27,15 @@ namespace larlite {
   
   bool SearchPFPartHierarchy::analyze(storage_manager* storage) {
 
+    // keep track of number of showers and tracks found
+    int n_showers = 0;
+    int n_tracks  = 0;
+
     // print event information
-    std::cout << "Run   " << storage->run_id() << std::endl;
-    std::cout << "Event " << storage->event_id() << std::endl;
+    if (_verbose){
+      std::cout << "Run   " << storage->run_id() << std::endl;
+      std::cout << "Event " << storage->event_id() << std::endl;
+    }
     
     // get a handle to the association
     auto ev_ass = storage->get_data<larlite::event_ass>("NuMuCCInclusive");
@@ -31,8 +48,8 @@ namespace larlite {
     ass_trk_vtx_v = storage->find_one_ass( ass_keys[0].second, ev_trk, ev_ass->name() );
 
     larlite::AssSet_t ass_vtx_trk_v;
-    larlite::event_track *ev_vtx = nullptr;
-    ass_vtx_trk_v = storage->find_one_ass( ass_keys[0].second, ev_vtx, ev_ass->name() );
+    larlite::event_vertex *ev_vtx = nullptr;
+    ass_vtx_trk_v = storage->find_one_ass( ass_keys[0].first, ev_vtx, ev_ass->name() );
 
     // are there tracks? are there vertices?
     if (!ev_trk or (ev_trk->size() == 0)){
@@ -54,7 +71,8 @@ namespace larlite {
       return false;
     }
 
-    std::cout << "Associations between vtx and track : " << ass_vtx_trk_v.size() << std::endl;
+    if (_verbose)
+      std::cout << "Associations between vtx and track : " << ass_vtx_trk_v.size() << std::endl;
 
     // find the track and vertex associated to the neutrino
     for (size_t i=0; i < ass_vtx_trk_v.size(); i++){
@@ -63,49 +81,70 @@ namespace larlite {
 	std::cout << "vtx->trk association is empty..." << std::endl;
 	continue;
       }
-      
-      std::cout << "trk " << i << " associated to vtx " << ass_vtx_trk_v[i][0] << std::endl;
+      if (_verbose){
+	std::cout << "trk " << i << " associated to vtx " << ass_vtx_trk_v[i][0] << std::endl;
+	std::cout << ev_trk->size() << " tracks present.." << std::endl;
+	std::cout << ev_vtx->size() << " vertices present.." << std::endl;
+      }
       auto const& nutrk = ev_trk->at(i);
       auto const& nuvtx = ev_vtx->at( ass_vtx_trk_v[i][0] );
       
       // grab the PFParticle associated with this muon
-      std::cout << "PFParts associated with muon : " <<  ass_trk_pfpart_v[i].size() << std::endl;
+      if (ass_trk_pfpart_v.size() <= i)
+	return false;
+      if (_verbose)
+	std::cout << "PFParts associated with muon : " <<  ass_trk_pfpart_v[i].size() << std::endl;
       auto pfpart_idx = ass_trk_pfpart_v[i][0];
       auto muon = ev_pfpart->at(pfpart_idx);
-      
-      std::cout << "Muon PFPart info :" << std::endl
-		<< "\tPDG code   : " << muon.PdgCode() << std::endl
-		<< "\tDaughters? : " << muon.NumDaughters() << std::endl
-		<< "\t Parent?   : " << muon.Parent() << std::endl;
+
+      if (_verbose)
+	std::cout << "Muon PFPart info :" << std::endl
+		  << "\tPDG code   : " << muon.PdgCode() << std::endl
+		  << "\tDaughters? : " << muon.NumDaughters() << std::endl
+		  << "\t Parent?   : " << muon.Parent() << std::endl;
       
       // grab parent
       if (muon.Parent() >= ev_pfpart->size()){
-	std::cout << "Muon parent not here..." << std::endl;
+	if (_verbose)
+	  std::cout << "Muon parent not here..." << std::endl;
 	return false;
       }
       
       auto neutrino = ev_pfpart->at( muon.Parent() );
-      
-      std::cout << "Neutrino PFPart info :" << std::endl
-		<< "\tPDG code   : " << neutrino.PdgCode() << std::endl
-		<< "\tDaughters? : " << neutrino.NumDaughters() << std::endl
-		<< "\t Parent?   : " << neutrino.Parent() << std::endl;
+
+      if (_verbose)
+	std::cout << "Neutrino PFPart info :" << std::endl
+		  << "\tPDG code   : " << neutrino.PdgCode() << std::endl
+		  << "\tDaughters? : " << neutrino.NumDaughters() << std::endl
+		  << "\t Parent?   : " << neutrino.Parent() << std::endl;
       
       // print neutrino daughters
       for (auto daughter_idx : neutrino.Daughters() ){
 	auto daughter = ev_pfpart->at(daughter_idx);
-	std::cout << "daughter PFPart info :" << std::endl
-		  << "\tPDG code   : " << daughter.PdgCode() << std::endl
-		  << "\tDaughters? : " << daughter.NumDaughters() << std::endl
-		  << "\t Parent?   : " << daughter.Parent() << std::endl;
+	if (_verbose)
+	  std::cout << "daughter PFPart info :" << std::endl
+		    << "\tPDG code   : " << daughter.PdgCode() << std::endl
+		    << "\tDaughters? : " << daughter.NumDaughters() << std::endl
+		    << "\t Parent?   : " << daughter.Parent() << std::endl;
+	if (daughter.PdgCode() == 11)
+	  n_showers += 1;
+	if (daughter.PdgCode() == 13)
+	  n_tracks += 1;
       }
       
       // found the muon -> so exit track loop...
 
-      std::cout << std::endl << std::endl << std::endl;
+      if (_verbose)
+	std::cout << std::endl << std::endl << std::endl;
       
       break;
     }
+
+    if (_filter_showers and (n_showers != _n_showers) )
+      return false;
+
+    if (_filter_tracks and (n_tracks != _n_tracks) )
+      return false;
     
     return true;
   }

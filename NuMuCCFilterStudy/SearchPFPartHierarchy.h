@@ -27,7 +27,7 @@ namespace larlite {
   public:
 
     /// Default constructor
-    SearchPFPartHierarchy(){ _name="SearchPFPartHierarchy"; _fout=0;}
+    SearchPFPartHierarchy();
 
     /// Default destructor
     virtual ~SearchPFPartHierarchy(){}
@@ -38,7 +38,20 @@ namespace larlite {
 
     virtual bool finalize();
 
+    void SetFilterShowers(bool on, int n=0) { _filter_showers = on; _n_showers = n; }
+    void SetFilterTracks (bool on, int n=0) { _filter_tracks  = on; _n_tracks  = n; }
+
+    void SetVerbose(bool on) { _verbose = on; }
+
   protected:
+
+    bool _verbose;
+    bool _filter_showers;
+    bool _filter_tracks;
+    
+    int _n_tracks;
+    int _n_showers;
+    
     
   };
 }
