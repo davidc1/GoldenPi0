@@ -1,9 +1,9 @@
 /**
- * \file SearchPFPartHierarchy.h
+ * \file StudyNeutrinoInteraction.h
  *
  * \ingroup NuMuCCFilterStudy
  * 
- * \brief Class def header for a class SearchPFPartHierarchy
+ * \brief Class def header for a class StudyNeutrinoInteraction
  *
  * @author david
  */
@@ -12,25 +12,25 @@
 
     @{*/
 
-#ifndef LARLITE_SEARCHPFPARTHIERARCHY_H
-#define LARLITE_SEARCHPFPARTHIERARCHY_H
+#ifndef LARLITE_STUDYNEUTRINOINTERACTION_H
+#define LARLITE_STUDYNEUTRINOINTERACTION_H
 
 #include "Analysis/ana_base.h"
 
 namespace larlite {
   /**
-     \class SearchPFPartHierarchy
+     \class StudyNeutrinoInteraction
      User custom analysis class made by SHELL_USER_NAME
    */
-  class SearchPFPartHierarchy : public ana_base{
+  class StudyNeutrinoInteraction : public ana_base{
   
   public:
 
     /// Default constructor
-    SearchPFPartHierarchy();
+    StudyNeutrinoInteraction();
 
     /// Default destructor
-    virtual ~SearchPFPartHierarchy(){}
+    virtual ~StudyNeutrinoInteraction(){}
 
     virtual bool initialize();
 

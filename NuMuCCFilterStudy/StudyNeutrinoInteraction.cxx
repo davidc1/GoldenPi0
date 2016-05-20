@@ -1,17 +1,18 @@
-#ifndef LARLITE_SEARCHPFPARTHIERARCHY_CXX
-#define LARLITE_SEARCHPFPARTHIERARCHY_CXX
+#ifndef LARLITE_STUDYNEUTRINOINTERACTION_CXX
+#define LARLITE_STUDYNEUTRINOINTERACTION_CXX
 
-#include "SearchPFPartHierarchy.h"
+#include "StudyNeutrinoInteraction.h"
 #include "DataFormat/event_ass.h"
 #include "DataFormat/track.h"
 #include "DataFormat/vertex.h"
 #include "DataFormat/pfpart.h"
 
+
 namespace larlite {
 
-  SearchPFPartHierarchy::SearchPFPartHierarchy()
+  StudyNeutrinoInteraction::StudyNeutrinoInteraction()
   {
-    _name="SearchPFPartHierarchy";
+    _name="StudyNeutrinoInteraction";
     _fout=0;
     _verbose = true;
     _n_tracks = 0;
@@ -22,16 +23,20 @@ namespace larlite {
     _min_showers    = false;
   }
 
-  bool SearchPFPartHierarchy::initialize() {
+  bool StudyNeutrinoInteraction::initialize() {
 
     return true;
   }
   
-  bool SearchPFPartHierarchy::analyze(storage_manager* storage) {
+  bool StudyNeutrinoInteraction::analyze(storage_manager* storage) {
 
     // keep track of number of showers and tracks found
     int n_showers = 0;
     int n_tracks  = 0;
+    // keep track of the reconstructed tracks produced in the neutrino
+    // interaction. This vector contains all reco tracks with parent
+    // the reconstructed neutrino
+    std::vector<larlite::track> nu_trk_v;
 
     // print event information
     if (_verbose){
@@ -66,11 +71,26 @@ namespace larlite {
     // grab PFParticles associated with these tracks
     larlite::AssSet_t ass_trk_pfpart_v;
     larlite::event_pfpart *ev_pfpart = nullptr;
+    bool pfpart = true; // have the PFParticles been found?
     ass_trk_pfpart_v = storage->find_one_ass( ev_trk->id(), ev_pfpart, ev_trk->name() );
 
     if (!ev_pfpart or (ev_pfpart->size() == 0)){
       std::cout << "No pfpart! exit" << std::endl;
+      pfpart = false;
       return false;
+    }
+
+    // and now grab tracks associated to the same PFParts
+    larlite::AssSet_t ass_pfpart_trk_v;
+    larlite::event_track *ev_trk_2 = nullptr;
+    bool tracks = true; // have the tracks been found?
+    if (pfpart){
+      ass_pfpart_trk_v = storage->find_one_ass( ev_pfpart->id(), ev_trk_2, ev_pfpart->name() );
+      
+      if (!ev_trk_2 or (ev_trk_2->size() == 0)){
+	std::cout << "No track associated to PFPart! exit" << std::endl;
+	tracks = false;
+      }
     }
 
     if (_verbose)
@@ -130,39 +150,34 @@ namespace larlite {
 		    << "\t Parent?   : " << daughter.Parent() << std::endl;
 	if (daughter.PdgCode() == 11)
 	  n_showers += 1;
-	if (daughter.PdgCode() == 13)
+
+	if (daughter.PdgCode() == 13){
 	  n_tracks += 1;
+	  if (tracks == false) // don't search for reco tracks if they have not been found.
+	    continue;
+	  auto trk_idx = ass_pfpart_trk_v[daughter_idx];
+	  if (trk_idx.size() != 1){
+	    std::cout << "no associated track...skip" << std::endl;
+	    continue;
+	  }
+	  auto trk = ev_trk_2->at(trk_idx[0]);
+	  std::cout << "Added daughter to neutrino tracks" << std::endl;
+	  // add this track to the list of track-outputs of the neutrino interaction
+	  nu_trk_v.push_back( trk );
+	}// if tracks
       }
       
       // found the muon -> so exit track loop...
-
       if (_verbose)
 	std::cout << std::endl << std::endl << std::endl;
       
       break;
     }
 
-    if (!_min_showers){
-      if (_filter_showers and (n_showers != _n_showers) )
-	return false;
-    }
-    else{
-      if (_filter_showers and (n_showers < _n_showers) )
-	return false;
-    }
-    if (!_min_tracks){
-      if (_filter_tracks and (n_tracks != _n_tracks) )
-	return false;
-    }
-    else{
-      if (_filter_tracks and (n_tracks < _n_tracks) )
-	return false;
-    }
-    
     return true;
   }
   
-  bool SearchPFPartHierarchy::finalize() {
+  bool StudyNeutrinoInteraction::finalize() {
     
     return true;
   }
