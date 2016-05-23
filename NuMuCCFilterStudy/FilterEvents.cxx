@@ -1,19 +1,18 @@
-#ifndef LARLITE_STUDYNEUTRINOINTERACTION_CXX
-#define LARLITE_STUDYNEUTRINOINTERACTION_CXX
+#ifndef LARLITE_FILTEREVENTS_CXX
+#define LARLITE_FILTEREVENTS_CXX
 
-#include "StudyNeutrinoInteraction.h"
+#include "FilterEvents.h"
 #include "DataFormat/event_ass.h"
 #include "DataFormat/track.h"
 #include "DataFormat/vertex.h"
 #include "DataFormat/pfpart.h"
-
+#include "LArUtil/GeometryHelper.h"
 
 namespace larlite {
 
-  StudyNeutrinoInteraction::StudyNeutrinoInteraction()
-    : _tree(nullptr)
+  FilterEvents::FilterEvents()
   {
-    _name="StudyNeutrinoInteraction";
+    _name="FilterEvents";
     _fout=0;
     _verbose = true;
     _n_tracks = 0;
@@ -22,18 +21,17 @@ namespace larlite {
     _filter_tracks  = false;
     _min_tracks     = false;
     _min_showers    = false;
+    _max_dist = 10;
   }
 
-  bool StudyNeutrinoInteraction::initialize() {
-
-    if (_tree) delete _tree;
-    _tree = new TTree("tree","tree");
-    _tree->Branch("_muon_length",&_muon_length,"muon_length/D");
+  bool FilterEvents::initialize() {
 
     return true;
   }
   
-  bool StudyNeutrinoInteraction::analyze(storage_manager* storage) {
+  bool FilterEvents::analyze(storage_manager* storage) {
+
+    auto geoHelper = larutil::GeometryHelper::GetME();
 
     // keep track of number of showers and tracks found
     int n_showers = 0;
@@ -85,6 +83,8 @@ namespace larlite {
       return false;
     }
 
+    larlite::vertex nuvtx;
+
     // and now grab tracks associated to the same PFParts
     larlite::AssSet_t ass_pfpart_trk_v;
     larlite::event_track *ev_trk_2 = nullptr;
@@ -114,11 +114,7 @@ namespace larlite {
 	std::cout << ev_vtx->size() << " vertices present.." << std::endl;
       }
       auto const& nutrk = ev_trk->at(i);
-      auto const& nuvtx = ev_vtx->at( ass_vtx_trk_v[i][0] );
-
-      // get the muon length
-      _muon_length = nutrk.Length();
-      _tree->Fill();
+      nuvtx = ev_vtx->at( ass_vtx_trk_v[i][0] );
       
       // grab the PFParticle associated with this muon
       if (ass_trk_pfpart_v.size() <= i)
@@ -128,12 +124,6 @@ namespace larlite {
       auto pfpart_idx = ass_trk_pfpart_v[i][0];
       auto muon = ev_pfpart->at(pfpart_idx);
 
-      if (_verbose)
-	std::cout << "Muon PFPart info :" << std::endl
-		  << "\tPDG code   : " << muon.PdgCode() << std::endl
-		  << "\tDaughters? : " << muon.NumDaughters() << std::endl
-		  << "\t Parent?   : " << muon.Parent() << std::endl;
-      
       // grab parent
       if (muon.Parent() >= ev_pfpart->size()){
 	if (_verbose)
@@ -143,20 +133,10 @@ namespace larlite {
       
       auto neutrino = ev_pfpart->at( muon.Parent() );
 
-      if (_verbose)
-	std::cout << "Neutrino PFPart info :" << std::endl
-		  << "\tPDG code   : " << neutrino.PdgCode() << std::endl
-		  << "\tDaughters? : " << neutrino.NumDaughters() << std::endl
-		  << "\t Parent?   : " << neutrino.Parent() << std::endl;
-      
       // print neutrino daughters
       for (auto daughter_idx : neutrino.Daughters() ){
 	auto daughter = ev_pfpart->at(daughter_idx);
-	if (_verbose)
-	  std::cout << "daughter PFPart info :" << std::endl
-		    << "\tPDG code   : " << daughter.PdgCode() << std::endl
-		    << "\tDaughters? : " << daughter.NumDaughters() << std::endl
-		    << "\t Parent?   : " << daughter.Parent() << std::endl;
+
 	if (daughter.PdgCode() == 11)
 	  n_showers += 1;
 
@@ -175,20 +155,47 @@ namespace larlite {
 	  nu_trk_v.push_back( trk );
 	}// if tracks
       }
-      
-      // found the muon -> so exit track loop...
-      if (_verbose)
-	std::cout << std::endl << std::endl << std::endl;
-      
-      break;
     }
+    
+    // if there is a single track -> keep the event
+    if (nu_trk_v.size() == 1)
+      return true;
+    
+    // if more than 1 track -> require that at least 2 have a "common origin"
+    // grab the vertex coordinates on the Y plane
+    larutil::Point2D vertex2D;
+    double * xyz = new double[3];
+    nuvtx.XYZ(xyz);
+    vertex2D = geoHelper -> Point_3Dto2D(xyz, 2);
+    
+    // number of tracks close to the vertex
+    int numClose = 0;
+    
+    // lopp through all trakcs -> at least 2 (muon + other) have to lie within some distance
+    // of the vertex
+    for (auto const& trk : nu_trk_v){
+      
+      auto start = geoHelper->Point_3Dto2D( trk.LocationAtPoint(0), 2 );
+      auto end   = geoHelper->Point_3Dto2D( trk.LocationAtPoint( trk.NumberTrajectoryPoints() - 1 ), 2 );
+      double startDist = sqrt( (start.w - vertex2D.w) * (start.w - vertex2D.w) +
+			       (start.t - vertex2D.t) * (start.t - vertex2D.t) );
+      double endDist   = sqrt( (end.w - vertex2D.w) * (end.w - vertex2D.w) +
+			       (end.t - vertex2D.t) * (end.t - vertex2D.t) );
+      
+      if ( (startDist < _max_dist) or (endDist < _max_dist) )
+	numClose += 1;
+      
+    }// for all tracks
+    
+    // if the number of close tracks is less than 2 -> return false
+    if (numClose < 2)
+      return false;
+    
 
     return true;
   }
   
-  bool StudyNeutrinoInteraction::finalize() {
-
-    _tree->Write();
+  bool FilterEvents::finalize() {
     
     return true;
   }

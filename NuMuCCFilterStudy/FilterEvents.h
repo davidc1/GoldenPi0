@@ -1,9 +1,9 @@
 /**
- * \file StudyNeutrinoInteraction.h
+ * \file FilterEvents.h
  *
  * \ingroup NuMuCCFilterStudy
  * 
- * \brief Class def header for a class StudyNeutrinoInteraction
+ * \brief Class def header for a class FilterEvents
  *
  * @author david
  */
@@ -12,26 +12,25 @@
 
     @{*/
 
-#ifndef LARLITE_STUDYNEUTRINOINTERACTION_H
-#define LARLITE_STUDYNEUTRINOINTERACTION_H
+#ifndef LARLITE_FILTEREVENTS_H
+#define LARLITE_FILTEREVENTS_H
 
 #include "Analysis/ana_base.h"
-#include "TTree.h"
 
 namespace larlite {
   /**
-     \class StudyNeutrinoInteraction
+     \class FilterEvents
      User custom analysis class made by SHELL_USER_NAME
    */
-  class StudyNeutrinoInteraction : public ana_base{
+  class FilterEvents : public ana_base{
   
   public:
 
     /// Default constructor
-    StudyNeutrinoInteraction();
+    FilterEvents();
 
     /// Default destructor
-    virtual ~StudyNeutrinoInteraction(){}
+    virtual ~FilterEvents(){}
 
     virtual bool initialize();
 
@@ -43,7 +42,7 @@ namespace larlite {
     void SetFilterTracks (bool on, int n=0) { _filter_tracks  = on; _n_tracks  = n; }
     void SetMinTracks    (bool on, int n=0) { _filter_tracks  = on; _n_tracks  = n; _min_tracks  = true; }
     void SetMinShowers   (bool on, int n=0) { _filter_showers = on; _n_showers = n; _min_showers = true; }
-
+    void SetMaxDist(double d) { _max_dist = d; }
     void SetVerbose(bool on) { _verbose = on; }
 
   protected:
@@ -53,12 +52,11 @@ namespace larlite {
     bool _filter_tracks;
     bool _min_tracks;
     bool _min_showers;
+
+    double _max_dist;
     
     int _n_tracks;
     int _n_showers;
-
-    TTree* _tree;
-    double _muon_length;
     
     
   };

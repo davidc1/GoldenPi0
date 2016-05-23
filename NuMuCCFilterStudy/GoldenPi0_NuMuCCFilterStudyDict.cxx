@@ -38,6 +38,8 @@
 namespace std {} using namespace std;
 
 // Header files passed as explicit arguments
+#include "FilterEvents.h"
+#include "StudyNeutrinoInteraction.h"
 #include "SearchPFPartHierarchy.h"
 
 // Header files passed via #pragma extra_include
@@ -88,6 +90,96 @@ namespace ROOT {
 } // end of namespace ROOT
 
 namespace ROOT {
+   static TClass *larlitecLcLStudyNeutrinoInteraction_Dictionary();
+   static void larlitecLcLStudyNeutrinoInteraction_TClassManip(TClass*);
+   static void *new_larlitecLcLStudyNeutrinoInteraction(void *p = 0);
+   static void *newArray_larlitecLcLStudyNeutrinoInteraction(Long_t size, void *p);
+   static void delete_larlitecLcLStudyNeutrinoInteraction(void *p);
+   static void deleteArray_larlitecLcLStudyNeutrinoInteraction(void *p);
+   static void destruct_larlitecLcLStudyNeutrinoInteraction(void *p);
+
+   // Function generating the singleton type initializer
+   static TGenericClassInfo *GenerateInitInstanceLocal(const ::larlite::StudyNeutrinoInteraction*)
+   {
+      ::larlite::StudyNeutrinoInteraction *ptr = 0;
+      static ::TVirtualIsAProxy* isa_proxy = new ::TIsAProxy(typeid(::larlite::StudyNeutrinoInteraction));
+      static ::ROOT::TGenericClassInfo 
+         instance("larlite::StudyNeutrinoInteraction", "StudyNeutrinoInteraction.h", 26,
+                  typeid(::larlite::StudyNeutrinoInteraction), DefineBehavior(ptr, ptr),
+                  &larlitecLcLStudyNeutrinoInteraction_Dictionary, isa_proxy, 4,
+                  sizeof(::larlite::StudyNeutrinoInteraction) );
+      instance.SetNew(&new_larlitecLcLStudyNeutrinoInteraction);
+      instance.SetNewArray(&newArray_larlitecLcLStudyNeutrinoInteraction);
+      instance.SetDelete(&delete_larlitecLcLStudyNeutrinoInteraction);
+      instance.SetDeleteArray(&deleteArray_larlitecLcLStudyNeutrinoInteraction);
+      instance.SetDestructor(&destruct_larlitecLcLStudyNeutrinoInteraction);
+      return &instance;
+   }
+   TGenericClassInfo *GenerateInitInstance(const ::larlite::StudyNeutrinoInteraction*)
+   {
+      return GenerateInitInstanceLocal((::larlite::StudyNeutrinoInteraction*)0);
+   }
+   // Static variable to force the class initialization
+   static ::ROOT::TGenericClassInfo *_R__UNIQUE_(Init) = GenerateInitInstanceLocal((const ::larlite::StudyNeutrinoInteraction*)0x0); R__UseDummy(_R__UNIQUE_(Init));
+
+   // Dictionary for non-ClassDef classes
+   static TClass *larlitecLcLStudyNeutrinoInteraction_Dictionary() {
+      TClass* theClass =::ROOT::GenerateInitInstanceLocal((const ::larlite::StudyNeutrinoInteraction*)0x0)->GetClass();
+      larlitecLcLStudyNeutrinoInteraction_TClassManip(theClass);
+   return theClass;
+   }
+
+   static void larlitecLcLStudyNeutrinoInteraction_TClassManip(TClass* ){
+   }
+
+} // end of namespace ROOT
+
+namespace ROOT {
+   static TClass *larlitecLcLFilterEvents_Dictionary();
+   static void larlitecLcLFilterEvents_TClassManip(TClass*);
+   static void *new_larlitecLcLFilterEvents(void *p = 0);
+   static void *newArray_larlitecLcLFilterEvents(Long_t size, void *p);
+   static void delete_larlitecLcLFilterEvents(void *p);
+   static void deleteArray_larlitecLcLFilterEvents(void *p);
+   static void destruct_larlitecLcLFilterEvents(void *p);
+
+   // Function generating the singleton type initializer
+   static TGenericClassInfo *GenerateInitInstanceLocal(const ::larlite::FilterEvents*)
+   {
+      ::larlite::FilterEvents *ptr = 0;
+      static ::TVirtualIsAProxy* isa_proxy = new ::TIsAProxy(typeid(::larlite::FilterEvents));
+      static ::ROOT::TGenericClassInfo 
+         instance("larlite::FilterEvents", "FilterEvents.h", 25,
+                  typeid(::larlite::FilterEvents), DefineBehavior(ptr, ptr),
+                  &larlitecLcLFilterEvents_Dictionary, isa_proxy, 4,
+                  sizeof(::larlite::FilterEvents) );
+      instance.SetNew(&new_larlitecLcLFilterEvents);
+      instance.SetNewArray(&newArray_larlitecLcLFilterEvents);
+      instance.SetDelete(&delete_larlitecLcLFilterEvents);
+      instance.SetDeleteArray(&deleteArray_larlitecLcLFilterEvents);
+      instance.SetDestructor(&destruct_larlitecLcLFilterEvents);
+      return &instance;
+   }
+   TGenericClassInfo *GenerateInitInstance(const ::larlite::FilterEvents*)
+   {
+      return GenerateInitInstanceLocal((::larlite::FilterEvents*)0);
+   }
+   // Static variable to force the class initialization
+   static ::ROOT::TGenericClassInfo *_R__UNIQUE_(Init) = GenerateInitInstanceLocal((const ::larlite::FilterEvents*)0x0); R__UseDummy(_R__UNIQUE_(Init));
+
+   // Dictionary for non-ClassDef classes
+   static TClass *larlitecLcLFilterEvents_Dictionary() {
+      TClass* theClass =::ROOT::GenerateInitInstanceLocal((const ::larlite::FilterEvents*)0x0)->GetClass();
+      larlitecLcLFilterEvents_TClassManip(theClass);
+   return theClass;
+   }
+
+   static void larlitecLcLFilterEvents_TClassManip(TClass* ){
+   }
+
+} // end of namespace ROOT
+
+namespace ROOT {
    // Wrappers around operator new
    static void *new_larlitecLcLSearchPFPartHierarchy(void *p) {
       return  p ? ::new((::ROOT::TOperatorNewHelper*)p) ::larlite::SearchPFPartHierarchy : new ::larlite::SearchPFPartHierarchy;
@@ -108,9 +200,53 @@ namespace ROOT {
    }
 } // end of namespace ROOT for class ::larlite::SearchPFPartHierarchy
 
+namespace ROOT {
+   // Wrappers around operator new
+   static void *new_larlitecLcLStudyNeutrinoInteraction(void *p) {
+      return  p ? ::new((::ROOT::TOperatorNewHelper*)p) ::larlite::StudyNeutrinoInteraction : new ::larlite::StudyNeutrinoInteraction;
+   }
+   static void *newArray_larlitecLcLStudyNeutrinoInteraction(Long_t nElements, void *p) {
+      return p ? ::new((::ROOT::TOperatorNewHelper*)p) ::larlite::StudyNeutrinoInteraction[nElements] : new ::larlite::StudyNeutrinoInteraction[nElements];
+   }
+   // Wrapper around operator delete
+   static void delete_larlitecLcLStudyNeutrinoInteraction(void *p) {
+      delete ((::larlite::StudyNeutrinoInteraction*)p);
+   }
+   static void deleteArray_larlitecLcLStudyNeutrinoInteraction(void *p) {
+      delete [] ((::larlite::StudyNeutrinoInteraction*)p);
+   }
+   static void destruct_larlitecLcLStudyNeutrinoInteraction(void *p) {
+      typedef ::larlite::StudyNeutrinoInteraction current_t;
+      ((current_t*)p)->~current_t();
+   }
+} // end of namespace ROOT for class ::larlite::StudyNeutrinoInteraction
+
+namespace ROOT {
+   // Wrappers around operator new
+   static void *new_larlitecLcLFilterEvents(void *p) {
+      return  p ? ::new((::ROOT::TOperatorNewHelper*)p) ::larlite::FilterEvents : new ::larlite::FilterEvents;
+   }
+   static void *newArray_larlitecLcLFilterEvents(Long_t nElements, void *p) {
+      return p ? ::new((::ROOT::TOperatorNewHelper*)p) ::larlite::FilterEvents[nElements] : new ::larlite::FilterEvents[nElements];
+   }
+   // Wrapper around operator delete
+   static void delete_larlitecLcLFilterEvents(void *p) {
+      delete ((::larlite::FilterEvents*)p);
+   }
+   static void deleteArray_larlitecLcLFilterEvents(void *p) {
+      delete [] ((::larlite::FilterEvents*)p);
+   }
+   static void destruct_larlitecLcLFilterEvents(void *p) {
+      typedef ::larlite::FilterEvents current_t;
+      ((current_t*)p)->~current_t();
+   }
+} // end of namespace ROOT for class ::larlite::FilterEvents
+
 namespace {
   void TriggerDictionaryInitialization_libGoldenPi0_NuMuCCFilterStudy_Impl() {
     static const char* headers[] = {
+"FilterEvents.h",
+"StudyNeutrinoInteraction.h",
 "SearchPFPartHierarchy.h",
 0
     };
@@ -127,6 +263,8 @@ R"DICTFWDDCLS(
 #pragma clang diagnostic ignored "-Wreturn-type-c-linkage"
 extern int __Cling_Autoloading_Map;
 namespace larlite{class __attribute__((annotate("$clingAutoload$SearchPFPartHierarchy.h")))  SearchPFPartHierarchy;}
+namespace larlite{class __attribute__((annotate("$clingAutoload$StudyNeutrinoInteraction.h")))  StudyNeutrinoInteraction;}
+namespace larlite{class __attribute__((annotate("$clingAutoload$FilterEvents.h")))  FilterEvents;}
 )DICTFWDDCLS";
     static const char* payloadCode = R"DICTPAYLOAD(
 
@@ -135,12 +273,16 @@ namespace larlite{class __attribute__((annotate("$clingAutoload$SearchPFPartHier
 #endif
 
 #define _BACKWARD_BACKWARD_WARNING_H
+#include "FilterEvents.h"
+#include "StudyNeutrinoInteraction.h"
 #include "SearchPFPartHierarchy.h"
 
 #undef  _BACKWARD_BACKWARD_WARNING_H
 )DICTPAYLOAD";
     static const char* classesHeaders[]={
+"larlite::FilterEvents", payloadCode, "@",
 "larlite::SearchPFPartHierarchy", payloadCode, "@",
+"larlite::StudyNeutrinoInteraction", payloadCode, "@",
 nullptr};
 
     static bool isInitialized = false;
