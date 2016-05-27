@@ -16,10 +16,12 @@ namespace larlite {
     _verbose = true;
     _n_tracks = 0;
     _n_showers = 0;
+    _n_daughters = 0;
     _filter_showers = false;
     _filter_tracks  = false;
     _min_tracks     = false;
     _min_showers    = false;
+    _min_daughters  = false;
   }
 
   bool SearchPFPartHierarchy::initialize() {
@@ -141,6 +143,13 @@ namespace larlite {
       
       break;
     }
+
+    if (_min_daughters){
+      if ( (n_showers + n_tracks) >= _n_daughters)
+	return true;
+      else
+	return false;
+    }// if we want to set a minimum number of daughters
 
     if (!_min_showers){
       if (_filter_showers and (n_showers != _n_showers) )

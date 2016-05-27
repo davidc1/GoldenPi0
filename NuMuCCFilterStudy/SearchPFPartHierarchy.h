@@ -42,7 +42,7 @@ namespace larlite {
     void SetFilterTracks (bool on, int n=0) { _filter_tracks  = on; _n_tracks  = n; }
     void SetMinTracks    (bool on, int n=0) { _filter_tracks  = on; _n_tracks  = n; _min_tracks  = true; }
     void SetMinShowers   (bool on, int n=0) { _filter_showers = on; _n_showers = n; _min_showers = true; }
-
+    void SetMinDaughters (bool on, int n=0) { _min_daughters  = on; _n_daughters = n; }
     void SetVerbose(bool on) { _verbose = on; }
 
   protected:
@@ -52,9 +52,11 @@ namespace larlite {
     bool _filter_tracks;
     bool _min_tracks;
     bool _min_showers;
+    bool _min_daughters;
     
     int _n_tracks;
     int _n_showers;
+    int _n_daughters;
     
     
   };
