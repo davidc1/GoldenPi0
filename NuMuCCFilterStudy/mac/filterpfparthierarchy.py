@@ -31,8 +31,9 @@ my_proc.set_output_file("out.root");
 
 search = fmwk.SearchPFPartHierarchy()
 search.SetVerbose(False)
-search.SetFilterShowers(True,1)
-search.SetMinTracks(True,2)
+search.SetMinDaughters(True,3)
+#search.SetFilterShowers(True,1)
+#search.SetMinTracks(True,2)
 #search.SetFilterTracks(False)
 my_proc.add_process(search)
 
