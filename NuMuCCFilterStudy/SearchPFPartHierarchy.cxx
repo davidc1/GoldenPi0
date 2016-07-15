@@ -55,6 +55,10 @@ namespace larlite {
     larlite::event_vertex *ev_vtx = nullptr;
     ass_vtx_trk_v = storage->find_one_ass( ass_keys[0].first, ev_vtx, ev_ass->name() );
 
+    // also, create track & vertex associated with the neutrino interaction
+    auto ev_nu_trk = storage->get_data<larlite::event_track>("numuCC_track");
+    auto ev_nu_vtx = storage->get_data<larlite::event_vertex>("numuCC_vertex");
+
     // are there tracks? are there vertices?
     if (!ev_trk or (ev_trk->size() == 0)){
       std::cout << "No track! exit" << std::endl;
@@ -75,6 +79,8 @@ namespace larlite {
       return false;
     }
 
+    storage->set_id( ev_ass->run(), ev_ass->subrun(), ev_ass->event_id() );
+
     if (_verbose)
       std::cout << "Associations between vtx and track : " << ass_vtx_trk_v.size() << std::endl;
 
@@ -92,6 +98,9 @@ namespace larlite {
       }
       auto const& nutrk = ev_trk->at(i);
       auto const& nuvtx = ev_vtx->at( ass_vtx_trk_v[i][0] );
+
+      ev_nu_trk->emplace_back( nutrk );
+      ev_nu_vtx->emplace_back( nuvtx );
       
       // grab the PFParticle associated with this muon
       if (ass_trk_pfpart_v.size() <= i)
