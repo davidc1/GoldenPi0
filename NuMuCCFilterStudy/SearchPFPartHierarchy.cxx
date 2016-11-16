@@ -42,7 +42,7 @@ namespace larlite {
     }
     
     // get a handle to the association
-    auto ev_ass = storage->get_data<larlite::event_ass>("NuMuCCInclusive");
+    auto ev_ass = storage->get_data<larlite::event_ass>("NuMuCCSelectionII");
     
     // get the association keys
     auto const& ass_keys = ev_ass->association_keys();
@@ -69,6 +69,7 @@ namespace larlite {
       return false;
     }
 
+    /*
     // grab PFParticles associated with these tracks
     larlite::AssSet_t ass_trk_pfpart_v;
     larlite::event_pfpart *ev_pfpart = nullptr;
@@ -78,11 +79,14 @@ namespace larlite {
       std::cout << "No pfpart! exit" << std::endl;
       return false;
     }
+    */
 
     storage->set_id( ev_ass->run(), ev_ass->subrun(), ev_ass->event_id() );
 
-    if (_verbose)
-      std::cout << "Associations between vtx and track : " << ass_vtx_trk_v.size() << std::endl;
+    if (_verbose){
+      std::cout << "Associations between vtx and trk : " << ass_vtx_trk_v.size() << std::endl;
+      std::cout << "Associations between trk and vtx : " << ass_trk_vtx_v.size() << std::endl;
+    }
 
     // find the track and vertex associated to the neutrino
     for (size_t i=0; i < ass_vtx_trk_v.size(); i++){
@@ -101,6 +105,31 @@ namespace larlite {
 
       ev_nu_trk->emplace_back( nutrk );
       ev_nu_vtx->emplace_back( nuvtx );
+
+    }
+
+    // find the track and vertex associated to the neutrino
+    for (size_t i=0; i < ass_trk_vtx_v.size(); i++){
+      
+      if (ass_trk_vtx_v[i].size() == 0){
+	std::cout << "trk->vtx association is empty..." << std::endl;
+	continue;
+      }
+      if (_verbose){
+	std::cout << "vtx " << i << " associated to trk " << ass_trk_vtx_v[i][0] << std::endl;
+	std::cout << ev_trk->size() << " tracks present.." << std::endl;
+	std::cout << ev_vtx->size() << " vertices present.." << std::endl;
+      }
+      /*
+      auto const& nutrk = ev_trk->at(i);
+      auto const& nuvtx = ev_vtx->at( ass_vtx_trk_v[i][0] );
+
+      ev_nu_trk->emplace_back( nutrk );
+      ev_nu_vtx->emplace_back( nuvtx );
+      */
+
+    }
+      /*
       
       // grab the PFParticle associated with this muon
       if (ass_trk_pfpart_v.size() <= i)
@@ -176,6 +205,8 @@ namespace larlite {
       if (_filter_tracks and (n_tracks < _n_tracks) )
 	return false;
     }
+    
+      */
     
     return true;
   }

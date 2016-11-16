@@ -28,6 +28,7 @@ my_proc.set_ana_output_file("calib_ana.root");
 my_proc.set_output_file("larlite_neutrino.root")
 
 search = fmwk.SearchPFPartHierarchy()
+search.SetVerbose(True)
 my_proc.add_process(search)
 
 my_proc.set_data_to_write(fmwk.data.kVertex,'numuCC_vertex')
@@ -38,6 +39,8 @@ print  "Finished configuring ana_processor. Start event loop!"
 print
 
 ctr = 0
+
+my_proc.run()
 
 while my_proc.process_event():
 
