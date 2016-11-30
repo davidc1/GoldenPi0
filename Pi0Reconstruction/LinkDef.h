@@ -10,6 +10,8 @@
 #pragma link off all functions;
 
 #pragma link C++ class larlite::VertexExample+;
+#pragma link C++ class larlite::VertexResolution+;
 //ADD_NEW_CLASS ... do not change this line
 #endif
+
 
