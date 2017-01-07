@@ -11,7 +11,12 @@
 
 #pragma link C++ class larlite::VertexExample+;
 #pragma link C++ class larlite::VertexResolution+;
+#pragma link C++ class larlite::ShowerStudy+;
+#pragma link C++ class larlite::SimchCollector+;
+#pragma link C++ class larlite::SimchCollectorBox+;
 //ADD_NEW_CLASS ... do not change this line
 #endif
+
+
 
 
