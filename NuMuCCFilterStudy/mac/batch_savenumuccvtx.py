@@ -26,7 +26,7 @@ for n in xrange(minfile,maxfile):
     my_proc.set_ana_output_file("ana.root")
     my_proc.set_output_file("/pnfs/uboone/persistent/users/oscillations_group/GoldenPi0/NuMuCC_Sel2_reco1and2_larlite//larlite_neutrino_%04i.root"%n)
     
-    ana = fmwk.EmptyModule()
+    ana = fmwk.SaveNumuCCVtx()
     
     fin = open('/pnfs/uboone/persistent/users/oscillations_group/GoldenPi0/NuMuCC_Sel2/numucc_sel2_5E19_info.txt')
         
