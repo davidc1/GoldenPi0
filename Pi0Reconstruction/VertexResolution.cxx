@@ -12,6 +12,7 @@ namespace larlite {
   {
     _fout = 0;
     _name = "VertexResolution";
+    _dmax = 4;
   }
 
 
@@ -25,6 +26,7 @@ namespace larlite {
     _tree->Branch("_rc_x",&_rc_x,"rc_x/D");
     _tree->Branch("_rc_y",&_rc_y,"rc_y/D");
     _tree->Branch("_rc_z",&_rc_z,"rc_z/D");
+    _tree->Branch("_dist",&_dist,"dist/D");
     
     return true;
   }
@@ -56,7 +58,15 @@ namespace larlite {
     _rc_y = vtx.Y();
     _rc_z = vtx.Z();
 
+    // currently accouting for a weird 0.5 cm offset on x coordinate
+    _dist = sqrt( ( (_rc_x - _mc_x + 0.5) * (_rc_x - _mc_x + 0.5) ) +
+		  ( (_rc_y - _mc_y) * (_rc_y - _mc_y) ) +
+		  ( (_rc_z - _mc_z) * (_rc_z - _mc_z) ) );
+
     _tree->Fill();
+
+    if (_dist > _dmax)
+      return false;
 
     return true;
   }

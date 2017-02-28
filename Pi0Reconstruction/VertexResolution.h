@@ -39,11 +39,17 @@ namespace larlite {
 
     virtual bool finalize();
 
+    void setResolutionFilter(double d) { _dmax = d; }
+    
+
   protected:
 
     TTree* _tree;
     double _rc_x, _rc_y, _rc_z;
     double _mc_x, _mc_y, _mc_z;
+    double _dist;
+
+    double _dmax;
     
   };
 }

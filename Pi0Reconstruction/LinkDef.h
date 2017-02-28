@@ -14,6 +14,7 @@
 #pragma link C++ class larlite::ShowerStudy+;
 #pragma link C++ class larlite::SimchCollector+;
 #pragma link C++ class larlite::SimchCollectorBox+;
+#pragma link C++ class larlite::SimchCollectorPi0+;
 //ADD_NEW_CLASS ... do not change this line
 #endif
 

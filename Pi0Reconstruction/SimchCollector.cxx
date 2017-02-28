@@ -11,13 +11,15 @@
 #include "DataFormat/hit.h"
 
 namespace larlite {
-
+  
   bool SimchCollector::initialize() {
-
+    
     _tree = new TTree("_ide_tree","IDE TREE");
-    _tree->Branch("_mc_e",&_mc_e,"mc_e");
-    _tree->Branch("_simch_e",&_simch_e,"simch_e");
-    _tree->Branch("_adc_e",&_adc_e,"adc_e");
+    _tree->Branch("_mc_e",&_mc_e,"mc_e/D");
+    _tree->Branch("_mc_edep",&_mc_edep,"mc_edep/D");
+    _tree->Branch("_simch_e",&_simch_e,"simch_e/D");
+    _tree->Branch("_adc_e",&_adc_e,"adc_e/D");
+    _tree->Branch("_shr_z",&_shr_z,"shr_z/D");
 
     return true;
   }
@@ -37,6 +39,10 @@ namespace larlite {
     auto const& mcs = ev_mcshower->at(0);
 
     _mc_e = mcs.Start().E();
+    
+    _mc_edep = mcs.DetProfile().E();
+    
+    _shr_z = mcs.DetProfile().Z();
     
     _simch_e = 0;
 

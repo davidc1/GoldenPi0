@@ -19,19 +19,17 @@ for x in xrange(len(sys.argv)-1):
     my_proc.add_input_file(sys.argv[x+1])
 
 # Specify IO mode
-my_proc.set_io_mode(fmwk.storage_manager.kREAD)
+my_proc.set_io_mode(fmwk.storage_manager.kBOTH)
 
 # Specify analysis output root file name
-my_proc.set_ana_output_file("simch_collector_ana.root");
+my_proc.set_ana_output_file("vertex_resolution_ana.root");
+my_proc.set_output_file("vertex_resolution_out.root");
 
-# Specify data output root file name
-#my_proc.set_output_file("larlite_neutrino.root")
+vtx = fmwk.VertexResolution()
+vtx.setResolutionFilter(4.)
+my_proc.add_process(vtx)
 
-shr = fmwk.SimchCollector()
-my_proc.add_process(shr)
-
-#my_proc.set_data_to_write(fmwk.data.kVertex,'numuCC_vertex')
-#my_proc.set_data_to_write(fmwk.data.kTrack,'numuCC_track')
+my_proc.enable_filter(True)
 
 print
 print  "Finished configuring ana_processor. Start event loop!"

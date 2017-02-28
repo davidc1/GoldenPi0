@@ -22,12 +22,12 @@ for x in xrange(len(sys.argv)-1):
 my_proc.set_io_mode(fmwk.storage_manager.kREAD)
 
 # Specify analysis output root file name
-my_proc.set_ana_output_file("simch_collector_ana.root");
+my_proc.set_ana_output_file("simch_collector_pi0_ana.root");
 
 # Specify data output root file name
 #my_proc.set_output_file("larlite_neutrino.root")
 
-shr = fmwk.SimchCollector()
+shr = fmwk.SimchCollectorPi0()
 my_proc.add_process(shr)
 
 #my_proc.set_data_to_write(fmwk.data.kVertex,'numuCC_vertex')

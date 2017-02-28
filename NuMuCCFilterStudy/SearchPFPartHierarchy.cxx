@@ -92,7 +92,7 @@ namespace larlite {
     for (size_t i=0; i < ass_vtx_trk_v.size(); i++){
       
       if (ass_vtx_trk_v[i].size() == 0){
-	std::cout << "vtx->trk association is empty..." << std::endl;
+	//std::cout << "vtx->trk association is empty..." << std::endl;
 	continue;
       }
       if (_verbose){
@@ -112,7 +112,7 @@ namespace larlite {
     for (size_t i=0; i < ass_trk_vtx_v.size(); i++){
       
       if (ass_trk_vtx_v[i].size() == 0){
-	std::cout << "trk->vtx association is empty..." << std::endl;
+	//std::cout << "trk->vtx association is empty..." << std::endl;
 	continue;
       }
       if (_verbose){

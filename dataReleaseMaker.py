@@ -16,8 +16,6 @@ import time
 
 import numpy
 
-import gc
-
 import math
 
 import Image
@@ -105,8 +103,8 @@ def getWireRange(vtx):
     vtxWT  = geomH.Point_3Dto2D(vtxXYZ, 2)
     vtx_w = int(vtxWT.w / 0.3)
     vtx_t = int(vtxWT.t / 0.057) + 800
-    print 'vertex being projected to wire : %i'%(vtx_w)
-    print 'vertex being projected to time : %i'%(vtx_t)
+    #print 'vertex being projected to wire : %i'%(vtx_w)
+    #print 'vertex being projected to time : %i'%(vtx_t)
 
     wire_min = vtx_w - buffer_w
     if (wire_min < 0):
@@ -126,7 +124,7 @@ def getWireRange(vtx):
 
 def drawEvent(wire_range, time_range, coll_image, output_folder, run, event):
 
-    print bcolors.OKBLUE, "Initializing data ...", bcolors.ENDC
+    #print bcolors.OKBLUE, "Initializing data ...", bcolors.ENDC
 
     w_width = wire_range[1]-wire_range[0]
     t_width = time_range[1]-time_range[0]
@@ -140,12 +138,12 @@ def drawEvent(wire_range, time_range, coll_image, output_folder, run, event):
     coll_image = numpy.repeat( coll_image, 6, axis=1)
 
     # This function maps the data onto the color scheme and makes and RGB array
-    print 'map collection-plane array'
+    #print 'map collection-plane array'
     coll_array = collectionMapper.to_rgba(coll_image)
     coll_array = numpy.uint8(coll_array*255)
 
     collfileName = "Run_%04i_Event_%05i_collection.png"%(run,event)
-    print collfileName
+    #print collfileName
 
     coll_image = Image.fromarray(coll_array)
     draw = ImageDraw.Draw(coll_image)
@@ -162,13 +160,11 @@ def drawEvent(wire_range, time_range, coll_image, output_folder, run, event):
 
 def main():
 
-    gc.enable()
-    gc.set_debug(gc.DEBUG_STATS)
 
     larutil.LArUtilManager.Reconfigure(larlite.geo.kMicroBooNE)
 
     drawWire = evd.DrawWire()
-    print 'initize image processing'
+    #print 'initize image processing'
     drawWire.initialize()
     
     ana_processor = larlite.ana_processor()
@@ -183,18 +179,16 @@ def main():
     manager.set_io_mode(larlite.storage_manager.kREAD)
     manager.open()
 
-    folder = "/home/david/uboone/images/"
-    _file_wire = sys.argv[1]
-    _file_nu   = sys.argv[2]
+    folder = "/uboone/data/users/davidc1/numuCCFilterOutput/selection2/handscanned/images/"
 
-    froot = ROOT.TFile(_file_nu)
+    froot = ROOT.TFile(sys.argv[1])
     tree  = froot.Get("larlite_id_tree")
     nentries = tree.GetEntries()
     froot.Close()
     
     i = 0
-    for entry in xrange(5):
-        print 'processing event %i'%entry
+    for entry in xrange(nentries):
+        #print 'processing event %i'%entry
 
         ana_processor.process_event( entry )
         manager.go_to( entry )
@@ -206,8 +200,6 @@ def main():
             continue
         vtx = vertex_v[0]
         wire_range, time_range = getWireRange(vtx)
-        print wire_range
-        print time_range
 
         run = manager.run_id()
         event = manager.event_id()
