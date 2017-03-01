@@ -20,7 +20,7 @@ endif
 #
 # Define directories to be compile upon a global "make"...
 #
-SUBDIRS := Pi0Reconstruction #ADD_NEW_SUBDIR ... do not remove this comment from this line
+SUBDIRS := Pi0Reconstruction TruthStudies #ADD_NEW_SUBDIR ... do not remove this comment from this line
 
 #####################################################################################
 #
