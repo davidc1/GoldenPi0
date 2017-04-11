@@ -8,7 +8,8 @@
 #include "DataFormat/vertex.h" 
 // include utility functions from GeoHelper
 #include "LArUtil/GeometryHelper.h"
-
+// include LArProperties utilities
+#include "LArUtil/LArProperties.h"
 
 namespace larlite {
 
@@ -28,6 +29,13 @@ namespace larlite {
   }
   
   bool VertexExample::analyze(storage_manager* storage) {
+
+    // get the drift velocity
+    double efield   = larutil::LArProperties::GetME()->Efield(); // kV/cm
+    double temp     = larutil::LArProperties::GetME()->Temperature(); // Kelvin
+    double driftVel = larutil::LArProperties::GetME()->DriftVelocity(efield,temp); // [cm/us]
+
+    std::cout << "Drift velocity is set to : " << driftVel << " [cm/us]" << std::endl;
   
     // load GeometryHelper utility
     auto geomHelper = ::larutil::GeometryHelper::GetME();

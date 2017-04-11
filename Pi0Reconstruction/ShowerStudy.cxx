@@ -68,6 +68,8 @@ namespace larlite {
   
   bool ShowerStudy::analyze(storage_manager* storage) {
 
+    Reset();
+
     _event = storage->event_id();
 
     // start with mc info
@@ -125,7 +127,7 @@ namespace larlite {
     std::cout << "there are " << ev_mcshower->size() << " MCShowers" << std::endl;
     for (size_t i=0; i < ev_mcshower->size(); i++){
       auto const& mcs = ev_mcshower->at(i);
-      //std::cout << "MCShower energy : " << mcs.DetProfile().E() << std::endl;
+      //std::cout << "MCShower energy : " << mcs.Start().E() << std::endl;
       // distance from vertex
       double x = mcs.Start().X();
       double y = mcs.Start().Y();
@@ -149,9 +151,6 @@ namespace larlite {
       }// if mother is a Pi0
     }// for all MCShowers
 
-    std::cout << "Found " << n_found << " Gammas" << std::endl;
-    std::cout << "Pi0 ID  : " << pi0_trkid << std::endl;
-    
     if ( (n_found == 2) ){//and (pi0_ID_1 == pi0_trkid) and (pi0_ID_2 == pi0_trkid ) ){
       
       auto const& shr1 = ev_mcshower->at(idx_1);
@@ -160,10 +159,9 @@ namespace larlite {
       _pi0_e  = shr1.MotherEnd().E();
       
       _mc_shr1_e  = shr1.Start().E();
-      std::cout << "DetProfile E1 : " <<  shr1.DetProfile().E() << std::endl;
-      _mc_shr1_x  = shr1.DetProfile().X();
-      _mc_shr1_y  = shr1.DetProfile().Y();
-      _mc_shr1_z  = shr1.DetProfile().Z();
+      _mc_shr1_x  = shr1.Start().X();
+      _mc_shr1_y  = shr1.Start().Y();
+      _mc_shr1_z  = shr1.Start().Z();
       double mom1 = sqrt ( ( shr1.Start().Px() * shr1.Start().Px() ) +
 			   ( shr1.Start().Py() * shr1.Start().Py() ) +
 			   ( shr1.Start().Pz() * shr1.Start().Pz() ) );
@@ -173,10 +171,9 @@ namespace larlite {
       _mc_shr1_pz = shr1.Start().Pz() / mom1;
       
       _mc_shr2_e  = shr2.Start().E();
-      std::cout << "DetProfile E2 : " <<  shr1.DetProfile().E() << std::endl;
-      _mc_shr2_x  = shr2.DetProfile().X();
-      _mc_shr2_y  = shr2.DetProfile().Y();
-      _mc_shr2_z  = shr2.DetProfile().Z();
+      _mc_shr2_x  = shr2.Start().X();
+      _mc_shr2_y  = shr2.Start().Y();
+      _mc_shr2_z  = shr2.Start().Z();
       double mom2 = sqrt ( ( shr2.Start().Px() * shr2.Start().Px() ) +
 			   ( shr2.Start().Py() * shr2.Start().Py() ) +
 			   ( shr2.Start().Pz() * shr2.Start().Pz() ) );
@@ -188,7 +185,6 @@ namespace larlite {
 
       
       } // if we found 2 mc showers that come from the beam pi0
-      
 
     // moving on to reconstruction
     if (ev_vertex->size() == 1){
@@ -200,37 +196,44 @@ namespace larlite {
 
     _n_reco_showers = ev_shower->size();
     
-    if (ev_shower->size() != 2)
+    if (ev_shower->size() > 2){
+      _tree->Fill();
       return true;
+    }
 
-    auto const& shr1 = ev_shower->at(0);
-    auto const& shr2 = ev_shower->at(1);
-
-    _rc_shr1_e = shr1.Energy();
-    _rc_shr1_x = shr1.ShowerStart().X();
-    _rc_shr1_y = shr1.ShowerStart().Y();
-    _rc_shr1_z = shr1.ShowerStart().Z();
-    double mom1 = sqrt( ( shr1.Direction().X() * shr1.Direction().X() ) +
-			( shr1.Direction().Y() * shr1.Direction().Y() ) +
-			( shr1.Direction().Z() * shr1.Direction().Z() ) );
-    _rc_shr1_px = shr1.Direction().X() / mom1;
-    _rc_shr1_py = shr1.Direction().Y() / mom1;
-    _rc_shr1_pz = shr1.Direction().Z() / mom1;
-
-    _rc_shr2_e = shr2.Energy();
-    _rc_shr2_x = shr2.ShowerStart().X();
-    _rc_shr2_y = shr2.ShowerStart().Y();
-    _rc_shr2_z = shr2.ShowerStart().Z();
-    double mom2 = sqrt( ( shr2.Direction().X() * shr2.Direction().X() ) +
-			( shr2.Direction().Y() * shr2.Direction().Y() ) +
-			( shr2.Direction().Z() * shr2.Direction().Z() ) );
-    _rc_shr2_px = shr2.Direction().X() / mom2;
-    _rc_shr2_py = shr2.Direction().Y() / mom2;
-    _rc_shr2_pz = shr2.Direction().Z() / mom2;
-
+    if (ev_shower->size() > 0){
+      auto const& shr1 = ev_shower->at(0);
+      
+      
+      _rc_shr1_e = shr1.Energy();
+      _rc_shr1_x = shr1.ShowerStart().X();
+      _rc_shr1_y = shr1.ShowerStart().Y();
+      _rc_shr1_z = shr1.ShowerStart().Z();
+      double mom1 = sqrt( ( shr1.Direction().X() * shr1.Direction().X() ) +
+			  ( shr1.Direction().Y() * shr1.Direction().Y() ) +
+			  ( shr1.Direction().Z() * shr1.Direction().Z() ) );
+      _rc_shr1_px = shr1.Direction().X() / mom1;
+      _rc_shr1_py = shr1.Direction().Y() / mom1;
+      _rc_shr1_pz = shr1.Direction().Z() / mom1;
+      
+      
+      if (ev_shower->size() == 2){
+	auto const& shr2 = ev_shower->at(1);
+	_rc_shr2_e = shr2.Energy();
+	_rc_shr2_x = shr2.ShowerStart().X();
+	_rc_shr2_y = shr2.ShowerStart().Y();
+	_rc_shr2_z = shr2.ShowerStart().Z();
+	double mom2 = sqrt( ( shr2.Direction().X() * shr2.Direction().X() ) +
+			    ( shr2.Direction().Y() * shr2.Direction().Y() ) +
+			    ( shr2.Direction().Z() * shr2.Direction().Z() ) );
+	_rc_shr2_px = shr2.Direction().X() / mom2;
+	_rc_shr2_py = shr2.Direction().Y() / mom2;
+	_rc_shr2_pz = shr2.Direction().Z() / mom2;
+      }// if 2 showers
+    }// if at least 1 shower
+    
     _tree->Fill();
-    
-    
+
     return true;
   }
   
@@ -240,6 +243,32 @@ namespace larlite {
     _tree->Write();
     
     return true;
+  }
+
+  void ShowerStudy::Reset() {
+
+    _n_reco_showers = 0;
+    _nu_e = 0;
+    _pi0_e = 0;
+
+    _mc_vtx_x= _mc_vtx_y= _mc_vtx_z= 0;
+    _rc_vtx_x= _rc_vtx_y= _rc_vtx_z= 0;
+    
+    _mc_shr1_x=  _mc_shr1_y=  _mc_shr1_z= 0;
+    _mc_shr1_px= _mc_shr1_py= _mc_shr1_pz= 0;
+    _mc_shr1_e= 0;
+    _rc_shr1_x=  _rc_shr1_y=  _rc_shr1_z= 0;
+    _rc_shr1_px= _rc_shr1_py= _rc_shr1_pz= 0;
+    _rc_shr1_e= 0;
+    
+    _mc_shr2_x=  _mc_shr2_y=  _mc_shr2_z= 0;
+    _mc_shr2_px= _mc_shr2_py= _mc_shr2_pz= 0;
+    _mc_shr2_e= 0;
+    _rc_shr2_x=  _rc_shr2_y=  _rc_shr2_z= 0;
+    _rc_shr2_px= _rc_shr2_py= _rc_shr2_pz= 0;
+    _rc_shr2_e= 0;
+    
+    return;
   }
 
 }

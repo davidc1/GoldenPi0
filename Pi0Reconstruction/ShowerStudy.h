@@ -53,6 +53,8 @@ namespace larlite {
 
   protected:
 
+    void Reset();
+
     TTree* _tree;
 
     int _n_reco_showers;
