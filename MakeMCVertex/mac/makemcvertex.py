@@ -28,8 +28,16 @@ my_proc.set_ana_output_file("ana.root");
 my_proc.set_output_file("larlite_vertex.root")
 
 mcvtx = fmwk.MakeMCVertex()
-mcvtx.SetXOffset(0.)
+mcvtx.SetXOffset(0.7)
 my_proc.add_process(mcvtx)
+
+my_proc.set_data_to_write(fmwk.data.kMCShower,    "mcreco"        )
+my_proc.set_data_to_write(fmwk.data.kMCTrack,     "mcreco"        )
+my_proc.set_data_to_write(fmwk.data.kMCTruth,     "generator"     )
+my_proc.set_data_to_write(fmwk.data.kVertex,      "mcvertex"      )
+my_proc.set_data_to_write(fmwk.data.kCluster,     "pandoraCosmic" )
+my_proc.set_data_to_write(fmwk.data.kAssociation, "pandoraCosmic" )
+my_proc.set_data_to_write(fmwk.data.kHit,         "gaushit"       )
 
 #my_proc.set_data_to_write(fmwk.data.kVertex,'mcvertex')
 
