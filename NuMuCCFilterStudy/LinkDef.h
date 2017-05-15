@@ -14,6 +14,7 @@
 #pragma link C++ class larlite::FilterEvents+;
 #pragma link C++ class larlite::SaveNumuCCVtx+;
 #pragma link C++ class larlite::SaveVtxTrackk+;
+#pragma link C++ class larlite::SaveSel2VtxTrk+;
 //ADD_NEW_CLASS ... do not change this line
 #endif
 
