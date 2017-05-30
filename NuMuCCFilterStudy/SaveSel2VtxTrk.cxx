@@ -51,6 +51,8 @@ namespace larlite {
     auto ev_nu_trk = storage->get_data<larlite::event_track>("numuCC_track");
     auto ev_nu_vtx = storage->get_data<larlite::event_vertex>("numuCC_vertex");
 
+    storage->set_id( ev_ass->run(), ev_ass->subrun(), ev_ass->event_id() );
+
     // are there tracks? are there vertices?
     if (!ev_trk or (ev_trk->size() == 0)){
       std::cout << "No track! exit" << std::endl;
@@ -61,7 +63,6 @@ namespace larlite {
       return false;
     }
 
-    storage->set_id( ev_ass->run(), ev_ass->subrun(), ev_ass->event_id() );
 
     if (_verbose){
       std::cout << "Associations between vtx and trk : " << ass_vtx_trk_v.size() << std::endl;
