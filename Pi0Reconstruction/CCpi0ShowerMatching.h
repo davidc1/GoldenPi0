@@ -88,9 +88,12 @@ namespace larlite {
 
     double _mc_oangle, _rc_oangle;
 
+    double _rcradlen1, _rcradlen2, _mcradlen1, _mcradlen2;
+
     double _rc_mass;
 
     double _dot1, _dot2;
+    double _strt1, _strt2;
     
   };
 }

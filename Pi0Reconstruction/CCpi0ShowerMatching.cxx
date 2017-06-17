@@ -60,9 +60,16 @@ namespace larlite {
     _tree->Branch("_rc_shr2_py",&_rc_shr2_py,"rc_shr2_py/D");
     _tree->Branch("_rc_shr2_pz",&_rc_shr2_pz,"rc_shr2_pz/D");
 
+    _tree->Branch("_rcradlen1",&_rcradlen1,"rcradlen1/D");
+    _tree->Branch("_rcradlen2",&_rcradlen2,"rcradlen2/D");
+    _tree->Branch("_mcradlen1",&_mcradlen1,"mcradlen1/D");
+    _tree->Branch("_mcradlen2",&_mcradlen2,"mcradlen2/D");
+
     // shower correlations
     _tree->Branch("_dot1",&_dot1,"dot1/D");
     _tree->Branch("_dot2",&_dot2,"dot2/D");
+    _tree->Branch("_strt1",&_strt1,"strt1/D");
+    _tree->Branch("_strt2",&_strt2,"strt2/D");
 
     _tree->Branch("_rc_oangle",&_rc_oangle,"rc_oangle/D");
     _tree->Branch("_mc_oangle",&_mc_oangle,"mc_oangle/D");
@@ -164,39 +171,53 @@ namespace larlite {
     }// for all MCShowers
 
     if ( (n_found != 2) ) return false;
-      
-    auto const& mcshr1 = ev_mcshower->at(idx_1);
-    auto const& mcshr2 = ev_mcshower->at(idx_2);
+
+    size_t idxLARGE = idx_1;
+    size_t idxSMALL = idx_2;
+
+    if (ev_mcshower->at(idx_1).Start().E() < ev_mcshower->at(idx_2).Start().E() )
+      { idxLARGE = idx_2; idxSMALL = idx_1; }
+    
+    auto const& mcshr1 = ev_mcshower->at(idxLARGE);
+    auto const& mcshr2 = ev_mcshower->at(idxSMALL);
     
     _pi0_e  = mcshr1.MotherEnd().E();
     
-    _mc_shr1_e  = mcshr1.Start().E();
-    _mc_shr1_x  = mcshr1.Start().X();
-    _mc_shr1_y  = mcshr1.Start().Y();
-    _mc_shr1_z  = mcshr1.Start().Z();
-    double mom1 = sqrt ( ( mcshr1.Start().Px() * mcshr1.Start().Px() ) +
-			 ( mcshr1.Start().Py() * mcshr1.Start().Py() ) +
-			 ( mcshr1.Start().Pz() * mcshr1.Start().Pz() ) );
+    _mc_shr1_e  = mcshr1.DetProfile().E();
+    _mc_shr1_x  = mcshr1.DetProfile().X();
+    _mc_shr1_y  = mcshr1.DetProfile().Y();
+    _mc_shr1_z  = mcshr1.DetProfile().Z();
+    double mom1 = sqrt ( ( mcshr1.DetProfile().Px() * mcshr1.DetProfile().Px() ) +
+			 ( mcshr1.DetProfile().Py() * mcshr1.DetProfile().Py() ) +
+			 ( mcshr1.DetProfile().Pz() * mcshr1.DetProfile().Pz() ) );
     
-    _mc_shr1_px = mcshr1.Start().Px() / mom1;
-    _mc_shr1_py = mcshr1.Start().Py() / mom1;
-    _mc_shr1_pz = mcshr1.Start().Pz() / mom1;
+    _mc_shr1_px = mcshr1.DetProfile().Px() / mom1;
+    _mc_shr1_py = mcshr1.DetProfile().Py() / mom1;
+    _mc_shr1_pz = mcshr1.DetProfile().Pz() / mom1;
     
-    _mc_shr2_e  = mcshr2.Start().E();
-    _mc_shr2_x  = mcshr2.Start().X();
-    _mc_shr2_y  = mcshr2.Start().Y();
-    _mc_shr2_z  = mcshr2.Start().Z();
-    double mom2 = sqrt ( ( mcshr2.Start().Px() * mcshr2.Start().Px() ) +
-			 ( mcshr2.Start().Py() * mcshr2.Start().Py() ) +
-			 ( mcshr2.Start().Pz() * mcshr2.Start().Pz() ) );
+    _mc_shr2_e  = mcshr2.DetProfile().E();
+    _mc_shr2_x  = mcshr2.DetProfile().X();
+    _mc_shr2_y  = mcshr2.DetProfile().Y();
+    _mc_shr2_z  = mcshr2.DetProfile().Z();
+    double mom2 = sqrt ( ( mcshr2.DetProfile().Px() * mcshr2.DetProfile().Px() ) +
+			 ( mcshr2.DetProfile().Py() * mcshr2.DetProfile().Py() ) +
+			 ( mcshr2.DetProfile().Pz() * mcshr2.DetProfile().Pz() ) );
     
-    _mc_shr2_px = mcshr2.Start().Px() / mom2;
-    _mc_shr2_py = mcshr2.Start().Py() / mom2;
-    _mc_shr2_pz = mcshr2.Start().Pz() / mom2;
+    _mc_shr2_px = mcshr2.DetProfile().Px() / mom2;
+    _mc_shr2_py = mcshr2.DetProfile().Py() / mom2;
+    _mc_shr2_pz = mcshr2.DetProfile().Pz() / mom2;
 
-    _mc_oangle  = mcshr1.Start().Momentum().Vect().Dot( mcshr1.Start().Momentum().Vect() );
-    _mc_oangle /= mcshr1.Start().Momentum().Vect().Mag();
-    _mc_oangle /= mcshr2.Start().Momentum().Vect().Mag();
+    _mc_oangle  = mcshr1.DetProfile().Momentum().Vect().Dot( mcshr2.DetProfile().Momentum().Vect() );
+    _mc_oangle /= mcshr1.DetProfile().Momentum().Vect().Mag();
+    _mc_oangle /= mcshr2.DetProfile().Momentum().Vect().Mag();
+
+    _mcradlen1 = sqrt( ( (_mc_shr1_x - _mc_vtx_x) * (_mc_shr1_x - _mc_vtx_x) ) +
+		       ( (_mc_shr1_y - _mc_vtx_y) * (_mc_shr1_y - _mc_vtx_y) ) +
+		       ( (_mc_shr1_z - _mc_vtx_z) * (_mc_shr1_z - _mc_vtx_z) ) );
+
+    _mcradlen2 = sqrt( ( (_mc_shr2_x - _mc_vtx_x) * (_mc_shr2_x - _mc_vtx_x) ) +
+		       ( (_mc_shr2_y - _mc_vtx_y) * (_mc_shr2_y - _mc_vtx_y) ) +
+		       ( (_mc_shr2_z - _mc_vtx_z) * (_mc_shr2_z - _mc_vtx_z) ) );
 
     std::vector<larlite::mcshower> pi0_mcshower_v = {mcshr1,mcshr2};
 
@@ -237,9 +258,13 @@ namespace larlite {
     _rc_shr1_pz = rcshr1.Direction().Z() / mom1;
 
 
-    _dot1  = rcshr1.Direction().Dot( mcshr1.Start().Momentum().Vect() );
-    _dot1 /= mcshr1.Start().Momentum().Vect().Mag();
+    _dot1  = rcshr1.Direction().Dot( mcshr1.DetProfile().Momentum().Vect() );
+    _dot1 /= mcshr1.DetProfile().Momentum().Vect().Mag();
     _dot1 /= rcshr1.Direction().Mag();
+
+    _strt1 = sqrt( ( (_rc_shr1_x-_mc_shr1_x) * (_rc_shr1_x-_mc_shr1_x) ) +
+		   ( (_rc_shr1_y-_mc_shr1_y) * (_rc_shr1_y-_mc_shr1_y) ) +
+		   ( (_rc_shr1_z-_mc_shr1_z) * (_rc_shr1_z-_mc_shr1_z) ) );
     
     
     auto const& rcshr2 = ev_shower->at( MCRCmatch.second );
@@ -255,10 +280,24 @@ namespace larlite {
     _rc_shr2_py = rcshr2.Direction().Y() / mom2;
     _rc_shr2_pz = rcshr2.Direction().Z() / mom2;
 
-    _dot2  = rcshr2.Direction().Dot( mcshr2.Start().Momentum().Vect() );
-    _dot2 /= mcshr2.Start().Momentum().Vect().Mag();
+    _dot2  = rcshr2.Direction().Dot( mcshr2.DetProfile().Momentum().Vect() );
+    _dot2 /= mcshr2.DetProfile().Momentum().Vect().Mag();
     _dot2 /= rcshr2.Direction().Mag();
 
+    _strt2 = sqrt( ( (_rc_shr2_x-_mc_shr2_x) * (_rc_shr2_x-_mc_shr2_x) ) +
+		   ( (_rc_shr2_y-_mc_shr2_y) * (_rc_shr2_y-_mc_shr2_y) ) +
+		   ( (_rc_shr2_z-_mc_shr2_z) * (_rc_shr2_z-_mc_shr2_z) ) );
+
+    
+    _rcradlen1 = sqrt( ( (_rc_shr1_x - _mc_vtx_x) * (_rc_shr1_x - _mc_vtx_x) ) +
+		       ( (_rc_shr1_y - _mc_vtx_y) * (_rc_shr1_y - _mc_vtx_y) ) +
+		       ( (_rc_shr1_z - _mc_vtx_z) * (_rc_shr1_z - _mc_vtx_z) ) );
+    
+    _rcradlen2 = sqrt( ( (_rc_shr2_x - _mc_vtx_x) * (_rc_shr2_x - _mc_vtx_x) ) +
+		       ( (_rc_shr2_y - _mc_vtx_y) * (_rc_shr2_y - _mc_vtx_y) ) +
+		       ( (_rc_shr2_z - _mc_vtx_z) * (_rc_shr2_z - _mc_vtx_z) ) );
+
+    // reco shower correlations
     _rc_oangle  = rcshr1.Direction().Dot( rcshr2.Direction() );
     _rc_oangle /= rcshr1.Direction().Mag();
     _rc_oangle /= rcshr2.Direction().Mag();
@@ -352,8 +391,8 @@ namespace larlite {
 	// grab reco shower
 	auto const& rcshr = shr_v.at(idx);
 	
-	double dot = rcshr.Direction().Dot( mcshr.Start().Momentum().Vect() );
-	dot /= mcshr.Start().Momentum().Vect().Mag();
+	double dot = rcshr.Direction().Dot( mcshr.DetProfile().Momentum().Vect() );
+	dot /= mcshr.DetProfile().Momentum().Vect().Mag();
 	dot /= rcshr.Direction().Mag();
 	
 	if (dot > dotmax) { dotmax = dot; idxmax = idx; }
