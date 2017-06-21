@@ -13,6 +13,8 @@
 #pragma link C++ class larlite::VertexResolution+;
 #pragma link C++ class larlite::ShowerStudy+;
 #pragma link C++ class larlite::CCpi0ShowerMatching+;
+#pragma link C++ class larlite::CCpi0ShowerMatchingReco+;
+#pragma link C++ class larlite::CCpi0ShowerMatchingMC+;
 #pragma link C++ class larlite::SimchCollector+;
 #pragma link C++ class larlite::SimchCollectorBox+;
 #pragma link C++ class larlite::SimchCollectorPi0+;

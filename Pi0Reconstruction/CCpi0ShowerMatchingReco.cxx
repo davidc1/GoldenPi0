@@ -1,23 +1,33 @@
-#ifndef LARLITE_CCPI0SHOWERMATCHING_CXX
-#define LARLITE_CCPI0SHOWERMATCHING_CXX
+#ifndef LARLITE_CCPI0SHOWERMATCHINGRECO_CXX
+#define LARLITE_CCPI0SHOWERMATCHINGRECO_CXX
 
-#include "CCpi0ShowerMatching.h"
+#include "CCpi0ShowerMatchingReco.h"
 
 #include "DataFormat/mctruth.h"
 #include "DataFormat/vertex.h"
+#include "DataFormat/pfpart.h"
+#include "DataFormat/cluster.h"
+#include "DataFormat/hit.h"
+
+#include "TwoDimTools/Linearity.h"
+
+#include "LArUtil/GeometryHelper.h"
+#include "LArUtil/Geometry.h"
 
 namespace larlite {
 
-  bool CCpi0ShowerMatching::initialize() {
+  bool CCpi0ShowerMatchingReco::initialize() {
+
+    _w2cm  = larutil::GeometryHelper::GetME()->WireToCm();
+    _t2cm  = larutil::GeometryHelper::GetME()->TimeToCm();
+
+    _vtx_w_cm = {0.,0.,0.};
+    _vtx_t_cm = {0.,0.,0.};
 
     if (_tree) delete _tree;
     _tree = new TTree("_tree","shower study tree");
 
     _tree->Branch("_n_reco_showers",&_n_reco_showers,"n_reco_showers/I");
-    
-    _tree->Branch("_nu_e",&_nu_e,"nu_e/D");
-    _tree->Branch("_pi_e",&_pi0_e,"pi0_e/D");
-
     _tree->Branch("_event",&_event,"event/I");
 
     // vertex info
@@ -28,7 +38,7 @@ namespace larlite {
     _tree->Branch("_rc_vtx_y",&_rc_vtx_y,"rc_vtx_y/D");
     _tree->Branch("_rc_vtx_z",&_rc_vtx_z,"rc_vtx_z/D");
 
-    // 1st shower info
+    // mc shower info
     _tree->Branch("_mc_shr1_x",&_mc_shr1_x,"mc_shr1_x/D");
     _tree->Branch("_mc_shr1_y",&_mc_shr1_y,"mc_shr1_y/D");
     _tree->Branch("_mc_shr1_z",&_mc_shr1_z,"mc_shr1_z/D");
@@ -36,15 +46,6 @@ namespace larlite {
     _tree->Branch("_mc_shr1_px",&_mc_shr1_px,"mc_shr1_px/D");
     _tree->Branch("_mc_shr1_py",&_mc_shr1_py,"mc_shr1_py/D");
     _tree->Branch("_mc_shr1_pz",&_mc_shr1_pz,"mc_shr1_pz/D");
-    _tree->Branch("_rc_shr1_x",&_rc_shr1_x,"rc_shr1_x/D");
-    _tree->Branch("_rc_shr1_y",&_rc_shr1_y,"rc_shr1_y/D");
-    _tree->Branch("_rc_shr1_z",&_rc_shr1_z,"rc_shr1_z/D");
-    _tree->Branch("_rc_shr1_e",&_rc_shr1_e,"rc_shr1_e/D");
-    _tree->Branch("_rc_shr1_px",&_rc_shr1_px,"rc_shr1_px/D");
-    _tree->Branch("_rc_shr1_py",&_rc_shr1_py,"rc_shr1_py/D");
-    _tree->Branch("_rc_shr1_pz",&_rc_shr1_pz,"rc_shr1_pz/D");
-
-    // 2nd shower info
     _tree->Branch("_mc_shr2_x",&_mc_shr2_x,"mc_shr2_x/D");
     _tree->Branch("_mc_shr2_y",&_mc_shr2_y,"mc_shr2_y/D");
     _tree->Branch("_mc_shr2_z",&_mc_shr2_z,"mc_shr2_z/D");
@@ -52,39 +53,48 @@ namespace larlite {
     _tree->Branch("_mc_shr2_px",&_mc_shr2_px,"mc_shr2_px/D");
     _tree->Branch("_mc_shr2_py",&_mc_shr2_py,"mc_shr2_py/D");
     _tree->Branch("_mc_shr2_pz",&_mc_shr2_pz,"mc_shr2_pz/D");
-    _tree->Branch("_rc_shr2_x",&_rc_shr2_x,"rc_shr2_x/D");
-    _tree->Branch("_rc_shr2_y",&_rc_shr2_y,"rc_shr2_y/D");
-    _tree->Branch("_rc_shr2_z",&_rc_shr2_z,"rc_shr2_z/D");
-    _tree->Branch("_rc_shr2_e",&_rc_shr2_e,"rc_shr2_e/D");
-    _tree->Branch("_rc_shr2_px",&_rc_shr2_px,"rc_shr2_px/D");
-    _tree->Branch("_rc_shr2_py",&_rc_shr2_py,"rc_shr2_py/D");
-    _tree->Branch("_rc_shr2_pz",&_rc_shr2_pz,"rc_shr2_pz/D");
 
-    _tree->Branch("_rcradlen1",&_rcradlen1,"rcradlen1/D");
-    _tree->Branch("_rcradlen2",&_rcradlen2,"rcradlen2/D");
+    // reco shower info
+    _tree->Branch("_rc_shr_x",&_rc_shr_x,"rc_shr_x/D");
+    _tree->Branch("_rc_shr_y",&_rc_shr_y,"rc_shr_y/D");
+    _tree->Branch("_rc_shr_z",&_rc_shr_z,"rc_shr_z/D");
+    _tree->Branch("_rc_shr_e",&_rc_shr_e,"rc_shr_e/D");
+    _tree->Branch("_rc_shr_px",&_rc_shr_px,"rc_shr_px/D");
+    _tree->Branch("_rc_shr_py",&_rc_shr_py,"rc_shr_py/D");
+    _tree->Branch("_rc_shr_pz",&_rc_shr_pz,"rc_shr_pz/D");
+
+    _tree->Branch("_rcradlen",&_rcradlen,"rcradlen/D");
     _tree->Branch("_mcradlen1",&_mcradlen1,"mcradlen1/D");
     _tree->Branch("_mcradlen2",&_mcradlen2,"mcradlen2/D");
 
-    // shower correlations
-    _tree->Branch("_dot1",&_dot1,"dot1/D");
-    _tree->Branch("_dot2",&_dot2,"dot2/D");
-    _tree->Branch("_strt1",&_strt1,"strt1/D");
-    _tree->Branch("_strt2",&_strt2,"strt2/D");
+    // reco cluster info
+    _tree->Branch("_ip",&_ip,"ip/D");
+    _tree->Branch("_lin",&_lin,"lin/D");
+    _tree->Branch("_ssv",&_ssv,"ssv/D");
+    _tree->Branch("_slope",&_slope,"slope/D");
+    _tree->Branch("_slopedirangle",&_slopedirangle,"slopedirangle/D");
 
-    _tree->Branch("_rc_oangle",&_rc_oangle,"rc_oangle/D");
+    // MC -> RC shower comparisons
+    _tree->Branch("_dot",&_dot,"dot/D");
+    _tree->Branch("_strt",&_strt,"strt/D");
+    _tree->Branch("_emc",&_emc,"emc/D");
+
+    // pi0 related MC information
+    _tree->Branch("_nu_e",&_nu_e,"nu_e/D");
+    _tree->Branch("_pi_e",&_pi0_e,"pi0_e/D");
     _tree->Branch("_mc_oangle",&_mc_oangle,"mc_oangle/D");
     _tree->Branch("_mc_mass"  ,&_mc_mass  ,"_mc_mass/D" );
-    _tree->Branch("_rc_mass"  ,&_rc_mass  ,"_rc_mass/D" );
-
     _tree->Branch("_dwallmin",&_dwallmin,"dwallmin/D");
     
     
     return true;
   }
   
-  bool CCpi0ShowerMatching::analyze(storage_manager* storage) {
+  bool CCpi0ShowerMatchingReco::analyze(storage_manager* storage) {
 
     Reset();
+
+
 
     _event = storage->event_id();
 
@@ -107,7 +117,16 @@ namespace larlite {
       return false;
     }
 
-    _n_reco_showers = ev_shower->size();
+    if (loadVertex(ev_vertex) == false) {
+      print(larlite::msg::kERROR,__FUNCTION__,"num. vertices != 1");
+      return false;
+    }
+
+
+    if (ev_shower->size() == 0) return true;
+    
+    // grab clusters associated with the reconstructed shower
+    auto reco_shr_cluster_v = GetRecoShowerClusters(storage, ev_shower);
     
     // get all MCParticles
     auto mctruth = ev_mctruth->at(0);
@@ -135,16 +154,12 @@ namespace larlite {
 
    MinDWall();
     
-   if (n_pi0 != 1){
-     _tree->Fill();
+    if (n_pi0 != 1)
       return false;
-   }
     
     // is the vertex in the TPC?
     auto const& vtx = part_v.at(pi0_idx).Trajectory().at(0);
     if ( (vtx.X() < 0) or (vtx.X() > 256) or (vtx.Y() < -116) or (vtx.Y() > 116) or (vtx.Z() < 0) or (vtx.Z() > 1036) ){
-      std::cout << "Vertex @ x : " << vtx.X() << "\t y : " << vtx.Y() << "\t z : " << vtx.Z() << std::endl;
-      _tree->Fill();
       return false;
     }
     
@@ -232,13 +247,7 @@ namespace larlite {
 
     _mc_mass = sqrt( 2 * _mc_shr1_e * _mc_shr2_e * ( 1 - _mc_oangle ) );
     
-
-    
-    if (ev_shower->size() < 2) {
-      print(larlite::msg::kERROR,__FUNCTION__," less than 2 reco showers. Skip.");
-      _tree->Fill();
-      return false;
-    }
+    _n_reco_showers = ev_shower->size();
     
     // moving on to reconstruction
     if (ev_vertex->size() == 1){
@@ -253,74 +262,73 @@ namespace larlite {
       reco_shower_v.push_back( ev_shower->at(i) );
     
     // MC <-> RC matching
-    auto MCRCmatch = Match(pi0_mcshower_v, reco_shower_v);
-    
-    auto const& rcshr1 = ev_shower->at( MCRCmatch.first );
-    
-    _rc_shr1_e = rcshr1.Energy();
-    _rc_shr1_x = rcshr1.ShowerStart().X();
-    _rc_shr1_y = rcshr1.ShowerStart().Y();
-    _rc_shr1_z = rcshr1.ShowerStart().Z();
-    mom1 = sqrt( ( rcshr1.Direction().X() * rcshr1.Direction().X() ) +
-		 ( rcshr1.Direction().Y() * rcshr1.Direction().Y() ) +
-		 ( rcshr1.Direction().Z() * rcshr1.Direction().Z() ) );
-    _rc_shr1_px = rcshr1.Direction().X() / mom1;
-    _rc_shr1_py = rcshr1.Direction().Y() / mom1;
-    _rc_shr1_pz = rcshr1.Direction().Z() / mom1;
+    auto MCRCmatch_v = Match(pi0_mcshower_v, reco_shower_v);
+
+    for (size_t rcidx = 0; rcidx < MCRCmatch_v.size(); rcidx++) {
+
+      auto const& mcidx = MCRCmatch_v[rcidx];
+
+      auto const& rcshr = ev_shower->at( rcidx );
+      auto const& mcshr = pi0_mcshower_v.at( mcidx );
+
+      // get clusters associated to this shower
+      auto reco_clusters = reco_shr_cluster_v.at( rcidx );
+      // fill cluster linearity info
+      std::vector<double> hit_w_v, hit_t_v;
+      //hit_w_v.resize( reco_clusters.at(2).size() );
+      //hit_t_v.resize( reco_clusters.at(2).size() );
+      for (auto const& hit : reco_clusters.at(2)) {
+	hit_w_v.push_back( hit.WireID().Wire * _w2cm - _vtx_w_cm[2] );
+	hit_t_v.push_back( hit.PeakTime()    * _t2cm - _vtx_t_cm[2] );
+      }
+
+      ::twodimtools::Linearity clusterlin(hit_w_v,hit_t_v);
+      _ip = clusterlin.IP(0.,0.);
+      _ssv = clusterlin._summed_square_variance;
+      _lin = clusterlin._local_lin_truncated_avg;
+      _slope = clusterlin._slope;
+
+      double slope3D = rcshr.Direction().X()/rcshr.Direction().Z();
+      slope3D       /= sqrt( ( rcshr.Direction().X() * rcshr.Direction().X() ) +
+			     ( rcshr.Direction().Z() * rcshr.Direction().Z() ) );
+      
+      _slopedirangle = atan(slope3D-_slope)/(1+_slope*slope3D);
+      
+      _rc_shr_e = rcshr.Energy();
+      _rc_shr_x = rcshr.ShowerStart().X();
+      _rc_shr_y = rcshr.ShowerStart().Y();
+      _rc_shr_z = rcshr.ShowerStart().Z();
+
+      double mom = sqrt( ( rcshr.Direction().X() * rcshr.Direction().X() ) +
+			 ( rcshr.Direction().Y() * rcshr.Direction().Y() ) +
+			 ( rcshr.Direction().Z() * rcshr.Direction().Z() ) );
+      
+      _rc_shr_px = rcshr.Direction().X() / mom;
+      _rc_shr_py = rcshr.Direction().Y() / mom;
+      _rc_shr_pz = rcshr.Direction().Z() / mom;
+
+      _rcradlen = sqrt( ( (_rc_shr_x - _rc_vtx_x) * (_rc_shr_x - _rc_vtx_x) ) +
+			( (_rc_shr_y - _rc_vtx_y) * (_rc_shr_y - _rc_vtx_y) ) +
+			( (_rc_shr_z - _rc_vtx_z) * (_rc_shr_z - _rc_vtx_z) ) );
+      
+      
+      _dot  = rcshr.Direction().Dot( mcshr.DetProfile().Momentum().Vect() );
+      _dot /= mcshr.DetProfile().Momentum().Vect().Mag();
+      _dot /= rcshr.Direction().Mag();
+
+      _emc = mcshr.DetProfile().E();
+
+      _strt = (rcshr.ShowerStart() - mcshr.DetProfile().Position().Vect()).Mag();
+      
+      _tree->Fill();
 
 
-    _dot1  = rcshr1.Direction().Dot( mcshr1.DetProfile().Momentum().Vect() );
-    _dot1 /= mcshr1.DetProfile().Momentum().Vect().Mag();
-    _dot1 /= rcshr1.Direction().Mag();
-
-    _strt1 = sqrt( ( (_rc_shr1_x-_mc_shr1_x) * (_rc_shr1_x-_mc_shr1_x) ) +
-		   ( (_rc_shr1_y-_mc_shr1_y) * (_rc_shr1_y-_mc_shr1_y) ) +
-		   ( (_rc_shr1_z-_mc_shr1_z) * (_rc_shr1_z-_mc_shr1_z) ) );
-    
-    
-    auto const& rcshr2 = ev_shower->at( MCRCmatch.second );
-    
-    _rc_shr2_e = rcshr2.Energy();
-    _rc_shr2_x = rcshr2.ShowerStart().X();
-    _rc_shr2_y = rcshr2.ShowerStart().Y();
-    _rc_shr2_z = rcshr2.ShowerStart().Z();
-    mom2 = sqrt( ( rcshr2.Direction().X() * rcshr2.Direction().X() ) +
-		 ( rcshr2.Direction().Y() * rcshr2.Direction().Y() ) +
-		 ( rcshr2.Direction().Z() * rcshr2.Direction().Z() ) );
-    _rc_shr2_px = rcshr2.Direction().X() / mom2;
-    _rc_shr2_py = rcshr2.Direction().Y() / mom2;
-    _rc_shr2_pz = rcshr2.Direction().Z() / mom2;
-
-    _dot2  = rcshr2.Direction().Dot( mcshr2.DetProfile().Momentum().Vect() );
-    _dot2 /= mcshr2.DetProfile().Momentum().Vect().Mag();
-    _dot2 /= rcshr2.Direction().Mag();
-
-    _strt2 = sqrt( ( (_rc_shr2_x-_mc_shr2_x) * (_rc_shr2_x-_mc_shr2_x) ) +
-		   ( (_rc_shr2_y-_mc_shr2_y) * (_rc_shr2_y-_mc_shr2_y) ) +
-		   ( (_rc_shr2_z-_mc_shr2_z) * (_rc_shr2_z-_mc_shr2_z) ) );
-
-    
-    _rcradlen1 = sqrt( ( (_rc_shr1_x - _mc_vtx_x) * (_rc_shr1_x - _mc_vtx_x) ) +
-		       ( (_rc_shr1_y - _mc_vtx_y) * (_rc_shr1_y - _mc_vtx_y) ) +
-		       ( (_rc_shr1_z - _mc_vtx_z) * (_rc_shr1_z - _mc_vtx_z) ) );
-    
-    _rcradlen2 = sqrt( ( (_rc_shr2_x - _mc_vtx_x) * (_rc_shr2_x - _mc_vtx_x) ) +
-		       ( (_rc_shr2_y - _mc_vtx_y) * (_rc_shr2_y - _mc_vtx_y) ) +
-		       ( (_rc_shr2_z - _mc_vtx_z) * (_rc_shr2_z - _mc_vtx_z) ) );
-
-    // reco shower correlations
-    _rc_oangle  = rcshr1.Direction().Dot( rcshr2.Direction() );
-    _rc_oangle /= rcshr1.Direction().Mag();
-    _rc_oangle /= rcshr2.Direction().Mag();
-
-    _rc_mass = sqrt( 2 * _rc_shr1_e * _rc_shr2_e * ( 1 - _rc_oangle ) );
-    
-    _tree->Fill();
+    }// loop through RC showers
 
     return true;
   }
   
-  bool CCpi0ShowerMatching::finalize() {
+  bool CCpi0ShowerMatchingReco::finalize() {
 
     if (_fout) _fout->cd();
     _tree->Write();
@@ -328,7 +336,7 @@ namespace larlite {
     return true;
   }
 
-  void CCpi0ShowerMatching::Reset() {
+  void CCpi0ShowerMatchingReco::Reset() {
 
     _n_reco_showers = 0;
     _nu_e = 0;
@@ -340,89 +348,55 @@ namespace larlite {
     _mc_shr1_x=  _mc_shr1_y=  _mc_shr1_z= 0;
     _mc_shr1_px= _mc_shr1_py= _mc_shr1_pz= 0;
     _mc_shr1_e= 0;
-    _rc_shr1_x=  _rc_shr1_y=  _rc_shr1_z= 0;
-    _rc_shr1_px= _rc_shr1_py= _rc_shr1_pz= 0;
-    _rc_shr1_e= 0;
     
     _mc_shr2_x=  _mc_shr2_y=  _mc_shr2_z= 0;
     _mc_shr2_px= _mc_shr2_py= _mc_shr2_pz= 0;
     _mc_shr2_e= 0;
-    _rc_shr2_x=  _rc_shr2_y=  _rc_shr2_z= 0;
-    _rc_shr2_px= _rc_shr2_py= _rc_shr2_pz= 0;
-    _rc_shr2_e= 0;
+
+    _rc_shr_x=  _rc_shr_y=  _rc_shr_z= 0;
+    _rc_shr_px= _rc_shr_py= _rc_shr_pz= 0;
+    _rc_shr_e= 0;
     
     return;
   }
 
-  std::pair<int,int> CCpi0ShowerMatching::Match(const std::vector<larlite::mcshower>& mcs_v,
-						const std::vector<larlite::shower>&   shr_v) {
+  std::vector<int> CCpi0ShowerMatchingReco::Match(const std::vector<larlite::mcshower>& mcs_v,
+						  const std::vector<larlite::shower>&   shr_v) {
 
-    // STEP 1
-    // sort reco showers by energy
-    std::vector<double> shr_energy_v;
-
-    for (auto const& shr : shr_v)
-      shr_energy_v.push_back( shr.Energy() );
-
-
-    std::reverse(shr_energy_v.begin(), shr_energy_v.end());
-
-    std::vector<size_t> sorted_idx_v;
-
-    for (auto const& E : shr_energy_v) {
-      for (size_t idx=0; idx < shr_v.size(); idx++){
-	if (E == shr_v.at(idx).Energy())
-	  sorted_idx_v.push_back( idx );
-      }// for all reco showers
-    }// for all energy values
-
-      
-    // if sorted idx list size different
-    // than shower vector -> error!
-
-    if (sorted_idx_v.size() != shr_v.size() )
-      print(larlite::msg::kERROR,__FUNCTION__," did not sort all showers successfully...");
-
-    // STEP 2
     // now match to true showers
-    std::vector<size_t> matched_indices;
+    std::vector<int> matched_indices;
 
-    // find best matching reco shower for each MC shower
-    for (auto const& mcshr : mcs_v) {
+    // find best matching MC shower for each reco shower
+    for (auto const& rcshr : shr_v) {
 
       double dotmax = -1.;
       size_t idxmax = 0.;
       
-      // loop through reco indices
-      for (auto const& idx : sorted_idx_v) {
+      // loop through mc indices
+      for (size_t i=0; i < mcs_v.size(); i++) {
 
-	// has this index already been used?
-	if (std::find(matched_indices.begin(), matched_indices.end(), idx) != matched_indices.end() ) continue;
-	
-	// grab reco shower
-	auto const& rcshr = shr_v.at(idx);
+	auto const& mcshr = mcs_v[i];
+
+	// in this module we want all reco'd showers to be matched to the
+	// most compatible true shower. Don't skip already matched mcshowers
 	
 	double dot = rcshr.Direction().Dot( mcshr.DetProfile().Momentum().Vect() );
 	dot /= mcshr.DetProfile().Momentum().Vect().Mag();
 	dot /= rcshr.Direction().Mag();
 	
-	if (dot > dotmax) { dotmax = dot; idxmax = idx; }
+	if (dot > dotmax) { dotmax = dot; idxmax = i; }
 	
       }// for all sorted indices
-
+      
       matched_indices.push_back( idxmax );
 
     }// for all true showers
     
-    // did we not find two matching showers?
-    if (matched_indices.size() != 2)
-      print(larlite::msg::kERROR,__FUNCTION__," did not find two reco matches!");
-    
-    return std::make_pair( matched_indices[0], matched_indices[1] );
+    return matched_indices;
     
   }// and of function
 
-  void CCpi0ShowerMatching::MinDWall() {
+  void CCpi0ShowerMatchingReco::MinDWall() {
 
     _dwallmin = 1000;
 
@@ -443,6 +417,84 @@ namespace larlite {
 
     if ( (_mc_vtx_y < 116) && ( (116-_mc_vtx_y) < _dwallmin) )
       _dwallmin = (116.-_mc_vtx_y);
+  }
+
+
+  std::vector< std::vector< std::vector< larlite::hit > > > CCpi0ShowerMatchingReco::GetRecoShowerClusters(larlite::storage_manager* storage, larlite::event_shower* ev_shower) {
+
+
+    larlite::event_pfpart*  ev_pfpart;
+    larlite::event_cluster* ev_cluster;
+    larlite::event_hit*     ev_hit;
+
+    auto ass_shr_pfp_v = storage->find_one_ass( ev_shower->id() , ev_pfpart , ev_shower->name()  );
+    auto ass_pfp_cls_v = storage->find_one_ass( ev_pfpart->id() , ev_cluster, ev_pfpart->name()  );
+    auto ass_cls_hit_v = storage->find_one_ass( ev_cluster->id(), ev_hit    , ev_cluster->name() );
+
+    std::vector< std::vector< std::vector< larlite::hit > > > shr_v_hits;
+
+    // for every PFParticle associated with each shower
+    for (auto const& ass_shr_pfp : ass_shr_pfp_v) {
+
+      // new vector for this shower (one entry per plane)
+      std::vector< std::vector< larlite::hit> > shr_hits;
+      shr_hits.resize(3);
+
+      // for every list of clusters associated with the PFParticle
+      for (auto const& ass_pfp_clus : ass_shr_pfp) {
+
+	for (auto const& clus_idx : ass_pfp_cls_v[ass_pfp_clus]) {
+	  
+	  // new cluster -> create vector of hits for this cluster
+	  std::vector< larlite::hit > hit_v;
+	  
+	  // grab the hit indices associated with this cluster
+	  auto const& hit_idx_v = ass_cls_hit_v.at( clus_idx );
+	  
+	  hit_v.reserve(hit_idx_v.size());
+	  
+	  for  (auto const& hit_idx : hit_idx_v) {
+	    
+	    hit_v.push_back( ev_hit->at(hit_idx) );
+	    
+	  }// for all hit indices
+
+	  shr_hits.at( ev_hit->at(hit_idx_v[0]).WireID().Plane ) =  hit_v ;
+
+	}// for all clusters associated to the PFPart
+	
+      }// for all PFParts
+
+      shr_v_hits.push_back( shr_hits );
+    }// for all showers
+
+    return shr_v_hits;
+  }
+
+  bool CCpi0ShowerMatchingReco::loadVertex(event_vertex* ev_vtx) {
+    
+    if (ev_vtx->size() != 1) return false;
+    
+    // get vertex position on each plane
+    if ( (ev_vtx->size() == 1) ){
+      auto const& vtx = ev_vtx->at(0);
+
+      std::vector<double> xyz = {vtx.X(), vtx.Y(), vtx.Z()};
+      
+      auto geoH = larutil::GeometryHelper::GetME();
+      auto geom = larutil::Geometry::GetME();
+
+      for (size_t pl = 0; pl < 3; pl++){
+	double *origin;
+	origin = new double[3];
+	geom->PlaneOriginVtx(pl,origin);
+	auto const& pt = geoH->Point_3Dto2D(xyz,pl);
+	_vtx_w_cm[pl] = pt.w;
+	_vtx_t_cm[pl] = pt.t + 800 * _t2cm - origin[0];
+      }
+    }
+
+    return true;
   }
   
 }

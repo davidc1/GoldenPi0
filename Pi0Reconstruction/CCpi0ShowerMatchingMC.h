@@ -1,9 +1,9 @@
 /**
- * \file CCpi0ShowerMatching.h
+ * \file CCpi0ShowerMatchingMC.h
  *
  * \ingroup Pi0Reconstruction
  * 
- * \brief Class def header for a class CCpi0ShowerMatching
+ * \brief Class def header for a class CCpi0ShowerMatchingMC
  *
  * @author david caratelli
  */
@@ -12,44 +12,45 @@
 
     @{*/
 
-#ifndef LARLITE_CCPI0SHOWERMATCHING_H
-#define LARLITE_CCPI0SHOWERMATCHING_H
+#ifndef LARLITE_CCPI0SHOWERMATCHINGMC_H
+#define LARLITE_CCPI0SHOWERMATCHINGMC_H
 
 #include "Analysis/ana_base.h"
 
 #include "DataFormat/mcshower.h"
 #include "DataFormat/shower.h"
+#include "DataFormat/vertex.h"
 
 #include "TTree.h"
 
 namespace larlite {
   /**
-     \class CCpi0ShowerMatching
+     \class CCpi0ShowerMatchingMC
      User custom analysis class made by SHELL_USER_NAME
    */
-  class CCpi0ShowerMatching : public ana_base{
+  class CCpi0ShowerMatchingMC : public ana_base{
   
   public:
 
     /// Default constructor
-    CCpi0ShowerMatching()
+    CCpi0ShowerMatchingMC()
       : _tree(nullptr)
-      { _name="CCpi0ShowerMatching"; _fout=0;}
+      { _name="CCpi0ShowerMatchingMC"; _fout=0;}
 
     /// Default destructor
-    virtual ~CCpi0ShowerMatching(){}
+    virtual ~CCpi0ShowerMatchingMC(){}
 
-    /** IMPLEMENT in CCpi0ShowerMatching.cc!
+    /** IMPLEMENT in CCpi0ShowerMatchingMC.cc!
         Initialization method to be called before the analysis event loop.
     */ 
     virtual bool initialize();
 
-    /** IMPLEMENT in CCpi0ShowerMatching.cc! 
+    /** IMPLEMENT in CCpi0ShowerMatchingMC.cc! 
         Analyze a data event-by-event  
     */
     virtual bool analyze(storage_manager* storage);
 
-    /** IMPLEMENT in CCpi0ShowerMatching.cc! 
+    /** IMPLEMENT in CCpi0ShowerMatchingMC.cc! 
         Finalize method to be called after all events processed.
     */
     virtual bool finalize();
@@ -60,11 +61,17 @@ namespace larlite {
 
     double _dwallmin;
 
-    std::pair<int,int> Match(const std::vector<larlite::mcshower>& mcs_v,
-			     const std::vector<larlite::shower>&   shr_v);
+    std::vector<int> Match(const std::vector<larlite::mcshower>& mcs_v,
+			   const std::vector<larlite::shower>&   shr_v);
+
+    bool loadVertex(event_vertex* ev_vtx);
 
     void Reset();
 
+    std::vector<double> _vtx_w_cm, _vtx_t_cm;
+
+    double _w2cm, _t2cm;
+    
     TTree* _tree;
 
     int _n_reco_showers;
@@ -72,6 +79,7 @@ namespace larlite {
     int _event;
 
     double _nu_e, _pi0_e;
+    int _n_trk;
     
     double _mc_vtx_x, _mc_vtx_y, _mc_vtx_z;
     double _rc_vtx_x, _rc_vtx_y, _rc_vtx_z;
@@ -79,26 +87,31 @@ namespace larlite {
     double _mc_shr1_x,  _mc_shr1_y,  _mc_shr1_z;
     double _mc_shr1_px, _mc_shr1_py, _mc_shr1_pz;
     double _mc_shr1_e;
-    double _rc_shr1_x,  _rc_shr1_y,  _rc_shr1_z;
-    double _rc_shr1_px, _rc_shr1_py, _rc_shr1_pz;
-    double _rc_shr1_e;
-
     double _mc_shr2_x,  _mc_shr2_y,  _mc_shr2_z;
     double _mc_shr2_px, _mc_shr2_py, _mc_shr2_pz;
     double _mc_shr2_e;
-    double _rc_shr2_x,  _rc_shr2_y,  _rc_shr2_z;
-    double _rc_shr2_px, _rc_shr2_py, _rc_shr2_pz;
-    double _rc_shr2_e;
+    double _mcradlen1, _mcradlen2;
+    
+    double _mc_shr_x,  _mc_shr_y,  _mc_shr_z;
+    double _mc_shr_px, _mc_shr_py, _mc_shr_pz;
+    double _mc_shr_e;
+    double _mcradlen;
 
-    double _mc_oangle, _rc_oangle;
+    double _mc_oangle;
 
-    double _rcradlen1, _rcradlen2, _mcradlen1, _mcradlen2;
+    double _mc_mass;
 
-    double _mc_mass, _rc_mass;
+    // MC -> RC shower comparisons
+    double _dot;
+    double _strt;
+    double _erc;
 
-    double _dot1, _dot2;
-    double _strt1, _strt2;
-
+    // cluster metrics
+    double _ip;
+    double _lin;
+    double _ssv;
+    double _slope;
+    
   };
 }
 #endif
