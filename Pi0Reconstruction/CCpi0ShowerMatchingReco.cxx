@@ -13,6 +13,7 @@
 
 #include "LArUtil/GeometryHelper.h"
 #include "LArUtil/Geometry.h"
+#include "LArUtil/DetectorProperties.h"
 
 namespace larlite {
 
@@ -73,6 +74,7 @@ namespace larlite {
     _tree->Branch("_ssv",&_ssv,"ssv/D");
     _tree->Branch("_slope",&_slope,"slope/D");
     _tree->Branch("_slopedirangle",&_slopedirangle,"slopedirangle/D");
+    _tree->Branch("_hitshowerangle",&_hitshowerangle,"hitshowerangle/D");
 
     // MC -> RC shower comparisons
     _tree->Branch("_dot",&_dot,"dot/D");
@@ -94,7 +96,9 @@ namespace larlite {
 
     Reset();
 
-
+    auto geom    = ::larutil::Geometry::GetME();
+    auto geomH   = ::larutil::GeometryHelper::GetME();
+    auto detProp = ::larutil::DetectorProperties::GetME();
 
     _event = storage->event_id();
 
@@ -273,27 +277,58 @@ namespace larlite {
 
       // get clusters associated to this shower
       auto reco_clusters = reco_shr_cluster_v.at( rcidx );
+
+      // get collection-plane cluster
+      auto clus_hitv_Y = reco_clusters.at(2);
+
+      auto clushitsY = clus_hitv_Y.second;
+      auto clusY     = clus_hitv_Y.first;
+
+      double * origin;
+      origin = new double[3];
+      geom->PlaneOriginVtx( 2, origin);
+      float planeOffset = origin[0];
+      
+      // get start tick/wire on the collection plane
+      auto const& sw = clusY.StartWire() * _w2cm - _vtx_w_cm[2];
+      auto const& st = ( clusY.StartTick() ) * _t2cm - _vtx_t_cm[2];
+
+      //std::cout << "hit start [w,t] -> " << sw << ", " << st << std::endl;
+
+      double slope3D = rcshr.Direction().X()/rcshr.Direction().Z();
+      slope3D       /= sqrt( ( rcshr.Direction().X() * rcshr.Direction().X() ) +
+			     ( rcshr.Direction().Z() * rcshr.Direction().Z() ) );
+
+      // angle between projected direction and average hit direction
+      _hitshowerangle = 0;
+      
       // fill cluster linearity info
       std::vector<double> hit_w_v, hit_t_v;
       //hit_w_v.resize( reco_clusters.at(2).size() );
       //hit_t_v.resize( reco_clusters.at(2).size() );
-      for (auto const& hit : reco_clusters.at(2)) {
-	hit_w_v.push_back( hit.WireID().Wire * _w2cm - _vtx_w_cm[2] );
-	hit_t_v.push_back( hit.PeakTime()    * _t2cm - _vtx_t_cm[2] );
+      for (auto const& hit : clushitsY) {
+	auto hitw = hit.WireID().Wire * _w2cm - _vtx_w_cm[2];
+	auto hitt = hit.PeakTime()    * _t2cm - _vtx_t_cm[2];
+	hit_w_v.push_back( hitw );
+	hit_t_v.push_back( hitt );
+	if ( (hitt == st) or (hitw == sw) ) continue;
+	//std::cout << "\t hit [w,t] -> " << hitw << ", " << hitt << std::endl;
+	double hitslope = (hitt - st) / ( hitw - sw );
+	double angle = atan( (slope3D - hitslope)/(1+slope3D*hitslope) );
+	_hitshowerangle += angle;
       }
 
+      _hitshowerangle /= ( hit_w_v.size() - 1);
+      std::cout << "angle : " << _hitshowerangle*180./3.14 << std::endl;
+      
       ::twodimtools::Linearity clusterlin(hit_w_v,hit_t_v);
       _ip = clusterlin.IP(0.,0.);
       _ssv = clusterlin._summed_square_variance;
       _lin = clusterlin._local_lin_truncated_avg;
       _slope = clusterlin._slope;
-
-      double slope3D = rcshr.Direction().X()/rcshr.Direction().Z();
-      slope3D       /= sqrt( ( rcshr.Direction().X() * rcshr.Direction().X() ) +
-			     ( rcshr.Direction().Z() * rcshr.Direction().Z() ) );
       
       _slopedirangle = atan(slope3D-_slope)/(1+_slope*slope3D);
-      
+
       _rc_shr_e = rcshr.Energy();
       _rc_shr_x = rcshr.ShowerStart().X();
       _rc_shr_y = rcshr.ShowerStart().Y();
@@ -420,9 +455,9 @@ namespace larlite {
   }
 
 
-  std::vector< std::vector< std::vector< larlite::hit > > > CCpi0ShowerMatchingReco::GetRecoShowerClusters(larlite::storage_manager* storage, larlite::event_shower* ev_shower) {
-
-
+  std::vector< std::vector< std::pair< larlite::cluster, std::vector< larlite::hit > > > > CCpi0ShowerMatchingReco::GetRecoShowerClusters(larlite::storage_manager* storage, larlite::event_shower* ev_shower) {
+    
+    
     larlite::event_pfpart*  ev_pfpart;
     larlite::event_cluster* ev_cluster;
     larlite::event_hit*     ev_hit;
@@ -431,13 +466,13 @@ namespace larlite {
     auto ass_pfp_cls_v = storage->find_one_ass( ev_pfpart->id() , ev_cluster, ev_pfpart->name()  );
     auto ass_cls_hit_v = storage->find_one_ass( ev_cluster->id(), ev_hit    , ev_cluster->name() );
 
-    std::vector< std::vector< std::vector< larlite::hit > > > shr_v_hits;
+    std::vector< std::vector< std::pair< larlite::cluster, std::vector< larlite::hit > > > > shr_v_hits;
 
     // for every PFParticle associated with each shower
     for (auto const& ass_shr_pfp : ass_shr_pfp_v) {
 
       // new vector for this shower (one entry per plane)
-      std::vector< std::vector< larlite::hit> > shr_hits;
+      std::vector< std::pair< larlite::cluster, std::vector< larlite::hit> > > shr_hits;
       shr_hits.resize(3);
 
       // for every list of clusters associated with the PFParticle
@@ -459,7 +494,7 @@ namespace larlite {
 	    
 	  }// for all hit indices
 
-	  shr_hits.at( ev_hit->at(hit_idx_v[0]).WireID().Plane ) =  hit_v ;
+	  shr_hits.at( ev_hit->at(hit_idx_v[0]).WireID().Plane ) = std::make_pair( ev_cluster->at(clus_idx), hit_v ) ;
 
 	}// for all clusters associated to the PFPart
 	

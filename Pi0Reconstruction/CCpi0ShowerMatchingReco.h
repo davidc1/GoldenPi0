@@ -20,6 +20,7 @@
 #include "DataFormat/mcshower.h"
 #include "DataFormat/shower.h"
 #include "DataFormat/vertex.h"
+#include "DataFormat/cluster.h"
 
 #include "TTree.h"
 
@@ -64,7 +65,7 @@ namespace larlite {
     std::vector<int> Match(const std::vector<larlite::mcshower>& mcs_v,
 			   const std::vector<larlite::shower>&   shr_v);
 
-    std::vector< std::vector< std::vector< larlite::hit > > > GetRecoShowerClusters(larlite::storage_manager* storage, larlite::event_shower* ev_shower);
+    std::vector< std::vector< std::pair< larlite::cluster, std::vector<larlite::hit> > > > GetRecoShowerClusters(larlite::storage_manager* storage, larlite::event_shower* ev_shower);
 
     bool loadVertex(event_vertex* ev_vtx);
 
@@ -113,6 +114,7 @@ namespace larlite {
     double _ssv;
     double _slope;
     double _slopedirangle;
+    double _hitshowerangle;
     
   };
 }
