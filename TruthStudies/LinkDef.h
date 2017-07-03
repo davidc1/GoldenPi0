@@ -10,6 +10,8 @@
 #pragma link off all functions;
 
 #pragma link C++ class larlite::BNBPi0Properties+;
+#pragma link C++ class larlite::ShowerContainment+;
 //ADD_NEW_CLASS ... do not change this line
 #endif
+
 
