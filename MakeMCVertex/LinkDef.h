@@ -11,7 +11,9 @@
 
 #pragma link C++ class larlite::MakeMCVertex+;
 #pragma link C++ class larlite::MakeRandomVertex+;
+#pragma link C++ class larlite::MakeSingleParticleVertex+;
 //ADD_NEW_CLASS ... do not change this line
 #endif
+
 
 
