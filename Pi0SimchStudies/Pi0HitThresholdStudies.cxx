@@ -14,6 +14,7 @@ namespace larlite {
 
     if (_tree) delete _tree;
     _tree = new TTree("tree","tree");
+
     _tree->Branch("_etrue0",&_etrue0,"etrue0/D");
     _tree->Branch("_edep0", &_edep0, "edep0/D" );
     _tree->Branch("_ehit0", &_ehit0, "ehit0/D" );
@@ -26,11 +27,25 @@ namespace larlite {
 
     _tree->Branch("_angle", &_angle, "angle/D" );
 
+    if (_hit_tree) delete _hit_tree;
+    _hit_tree = new TTree("hit_tree","hit tree");
+    _hit_tree->Branch("_ch",&_ch,"ch/I");
+    _hit_tree->Branch("_q", &_q, "q/D" );
+    _hit_tree->Branch("_eshr", &_eshr, "eshr/D" );
+    _hit_tree->Branch("_eall", &_eall, "eall/D" );
+    _hit_tree->Branch("_adc", &_adc, "adc/D" );
+
     return true;
   }
   
   bool Pi0HitThresholdStudies::analyze(storage_manager* storage) {
 
+    _chTickMap.clear();
+    _chTickMap = std::vector< std::vector< std::pair<int,int> > >(8500,std::vector<std::pair<int,int> >());
+
+    _chIDEmap.clear();
+    _chIDEmap = std::vector< std::map<int,double> >(8500,std::map<int,double>());
+    
     // Retrieve mcshower data product
     auto ev_mcs   = storage->get_data<event_mcshower>("mcreco");
     // Retrieve hit data product
@@ -131,55 +146,117 @@ namespace larlite {
       auto const& tstart = hit.PeakTime() - 2*hit.RMS();// + 2255;//3050;
       auto const& tend   = hit.PeakTime() + 2*hit.RMS();// + 2255;//3050;
       auto const& pl     = hit.View();
-      
-      // create a wire-range object with channel + (start,end) time info for the hit
-      ::btutil::WireRange_t wr(ch,tstart,tend);
-      // use the back-tracker to return a vector of track IDs associated to this hit
-      // contents of return vector are proportional to the fraction of the hit's
-      // charge that is associated with the MCX id at that element's position
-      // vector ordered such that
-      // mcq_v [ index ] corresponds to index wihtin mc_index_v
-      auto mcq_v = _bt_algo.MCQ(wr);
-      // find entry with largest value -> this lets us know which MCX object
-      // to assign this hit to and thus which cluster this hit should
-      // be associated with
-      size_t idx  = 0;
-      double max_edep = 0;
-      for (size_t j=0; j < mcq_v.size(); j++){
-	if (mcq_v[j] > max_edep){
-	  max_edep = mcq_v[j];
-	  idx  = j;
-	}
+
+      // avoid duplicating time-intervals
+      std::pair<double,double> timeinterval = std::make_pair(tstart,tend);
+
+      if (_avoid_duplicate_ticks)
+	auto timeinterval = getTimeSubset(ch,(int)tstart,(int)tend);
+
+      if (timeinterval.first >= timeinterval.second) {
+	std::cout << "skipping hit " << std::endl;
+	continue;
       }
-      //std::cout << "Edep for this hit : " << max_edep << " associated with idx " << idx << std::endl;
-      // if the maximum amount of charge is 0
-      // ignore this hit
-      if (max_edep == 0)
-	continue;
-      // if the idx found is == to mcq_v.size() - 1
-      // this means that most of the charge belongs to 
-      // none of the MCX objects we are interested in
-      // -> ignore this hit
-      if (idx == mcq_v.size() -1 )
-	continue;
 
-      if (pl == 2) {
-	if (shrmapidx[idx] == 0) {
-	  _ehit0 += max_edep;
-	  _qhit0 += hit.Integral();
+      _chTickMap[ch].push_back( timeinterval );
+
+      // further avoid duplication
+      std::vector< std::pair<int,int> > timeinterval_v;
+
+      /*
+      bool duplicate = true;
+      int  tickstart, tickend;
+      for (int t = timeinterval.first; t< timeinterval.second; t++) {
+	if (_chIDEmap[ ch ].find( t ) != _chIDEmap[ ch ].end() ) {
+	  if (duplicate == false) { // end the hit
+	    tickend = t;
+	    timeinterval_v.push_back( std::make_pair(tickstart,tickend) );
+	    //std::cout << "adding new interval @ ch " << ch << " [ " << tickstart << ", " << tickend << " ]" << std::endl;
+	  }
+	  //std::cout << "found duplicate IDE @ ch " << ch << " @ tick " << t << std::endl;
+	  duplicate = true;
 	}
-	if (shrmapidx[idx] == 1) {
-	  _ehit1 += max_edep;
-	  _qhit1 += hit.Integral();
+	else {
+	  if (duplicate == true) {
+	    tickstart = t;
+	    duplicate = false;
+	  }
 	}
-      }// if on collection plane
+	_chIDEmap[ ch ][ t ] = 1;	  
+      }
+
+      if (duplicate == false) {
+	tickend = timeinterval.second;
+	//std::cout << "adding final interval @ ch " << ch << " [ " << tickstart << ", " << tickend << " ]" << std::endl;
+	timeinterval_v.push_back( std::make_pair(tickstart,tickend) );
+      }
+      */
       
-      // if not, associate this hit with the appropriate cluster
-      // ( "i" is the hit index )
-      cluster_hit_v[ pl * mc_index_v.size() + idx ].push_back( hit_idx );
-      cluster_plane_v[ pl * mc_index_v.size() + idx ] = pl;
-    }// for all hits in cluster
+      timeinterval_v.push_back( timeinterval );
 
+      for (auto const& T : timeinterval_v) {
+      
+	// create a wire-range object with channel + (start,end) time info for the hit
+	::btutil::WireRange_t wr(ch,T.first,T.second);
+	// use the back-tracker to return a vector of track IDs associated to this hit
+	// contents of return vector are proportional to the fraction of the hit's
+	// charge that is associated with the MCX id at that element's position
+	// vector ordered such that
+	// mcq_v [ index ] corresponds to index wihtin mc_index_v
+	auto mcq_v = _bt_algo.MCQ(wr);
+	// find entry with largest value -> this lets us know which MCX object
+	// to assign this hit to and thus which cluster this hit should
+	// be associated with
+	size_t idx  = 0;
+	double max_edep = 0;
+	for (size_t j=0; j < mcq_v.size(); j++){
+	  if (mcq_v[j] > max_edep){
+	    max_edep = mcq_v[j];
+	    idx  = j;
+	  }
+	}
+	//std::cout << "Edep for this hit : " << max_edep << " associated with idx " << idx << std::endl;
+	// if the maximum amount of charge is 0
+	// ignore this hit
+	if (max_edep == 0)
+	  continue;
+	// if the idx found is == to mcq_v.size() - 1
+	// this means that most of the charge belongs to 
+	// none of the MCX objects we are interested in
+	// -> ignore this hit
+	if (idx == mcq_v.size() -1 )
+	  continue;
+	
+	if (pl == 2) {
+	  if (shrmapidx[idx] == 0) {
+	    _ehit0 += max_edep;
+	    _qhit0 += hit.Integral();
+	  }
+	  if (shrmapidx[idx] == 1) {
+	    _ehit1 += max_edep;
+	    _qhit1 += hit.Integral();
+	  }
+
+	  _ch   = ch;
+	  _adc  = hit.Integral();
+	  _eshr = max_edep;
+	  _eall = 0;
+	  for (auto const& mcq : mcq_v)
+	    _eall += mcq;
+	  
+	  _hit_tree->Fill();
+
+	}// if on collection plane
+
+	// if not, associate this hit with the appropriate cluster
+	// ( "i" is the hit index )
+	cluster_hit_v[ pl * mc_index_v.size() + idx ].push_back( hit_idx );
+	cluster_plane_v[ pl * mc_index_v.size() + idx ] = pl;
+	
+      }// for all found time-intervals
+
+    }// for all hits in cluster
+    
     _tree->Fill();
 
     if (!_save_clusters) return true;
@@ -227,9 +304,60 @@ namespace larlite {
 
     if (_fout) _fout->cd();
     if (_tree) _tree->Write();
+    if (_hit_tree) _hit_tree->Write();
 
     return true;
   }
 
+
+  std::pair<int,int> Pi0HitThresholdStudies::getTimeSubset(const int& ch,const int& tstart,const int& tend) {
+
+    if (_chTickMap[ ch ].size() == 0) {
+      std::pair<int,int> tpair = std::make_pair(tstart,tend);
+      return tpair;
+    }
+
+    int startunique = tstart;
+    int endunique   = tend;
+
+    //std::cout << "new interval @ channel "  << ch << " [ " << tstart << ", " << tend << " ]" << std::endl;
+
+    // found, let's eliminate time-intervals
+    for (auto const& tpair : _chTickMap[ch] ) {
+
+      if (tpair.first > tend) continue;
+
+      if (tpair.second < tstart) continue;
+      
+      // if interval fully contained in already scanned interval
+      // return nothing
+      if ( (tstart > tpair.first) && (tend < tpair.second) )
+	return std::make_pair(0,0);
+
+      if ( (tstart > tpair.first) && (tstart < tpair.second) ) {
+	// only make interval smaller
+	if (tpair.second > startunique)
+	  startunique = tpair.second;
+      }
+      
+      if ( (tend > tpair.first) && (tend < tpair.second) ) {
+	// only make interval smaller
+	if (tpair.first < endunique)
+	  endunique = tpair.first;
+      }
+
+      // does the new it completely surround the old interval?
+      //if ( (tend >= tpair.second) && (tstart <= tpair.first) )
+      //std::cout << "Fully surrounded!" << std::endl;
+    }// for all time intervals already saved
+    
+    //if ( (startunique != tstart) || (endunique != tend) )
+    //std::cout << "time-interval @ channel " << ch << " changed from [ " << tstart << ", " << tend << " ]" 
+    //<< " to [ " << startunique << ", " << endunique << " ]" << std::endl;
+    
+    return std::make_pair(startunique,endunique);
+    
+  }
+  
 }
 #endif

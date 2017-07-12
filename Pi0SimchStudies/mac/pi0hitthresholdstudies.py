@@ -30,6 +30,7 @@ my_proc.set_output_file("larlite_mccluster.root")
 
 ana = fmwk.Pi0HitThresholdStudies()
 ana.SaveClusters(False)
+ana.AvoidDuplicateHits(False)
 my_proc.add_process(ana)
 
 #my_proc.set_data_to_write(fmwk.data.kMCShower,    "mcreco"        )

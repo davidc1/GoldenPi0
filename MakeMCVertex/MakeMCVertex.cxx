@@ -54,8 +54,10 @@ namespace larlite {
     xyz[1] = yvtx + sce_corr.at(1);
     xyz[2] = zvtx + sce_corr.at(2);
 
-    if ( (xyz[0] < 0) || (xyz[0] > 256) || (xyz[1] < -116) || (xyz[1] > 116) || (xyz[2] < 0) || (xyz[2] > 1036) )
-      return false;
+    if (_filter) {
+      if ( (xyz[0] < 0) || (xyz[0] > 256) || (xyz[1] < -116) || (xyz[1] > 116) || (xyz[2] < 0) || (xyz[2] > 1036) )
+	return false;
+    }
 
     //std::cout << "created vertex @ [ " << xyz[0] << ", " << xyz[1] << ", " << xyz[2] << "] " << std::endl;
     

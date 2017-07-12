@@ -49,8 +49,11 @@ namespace larlite {
     virtual bool finalize();
 
     void SetXOffset(double d) { _offset = d; }
+    void FilterEvents(bool on) { _filter = on; }
 
   protected:
+
+    bool   _filter;
 
     double _offset;
 

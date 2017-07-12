@@ -27,7 +27,7 @@ my_proc.set_ana_output_file("ana.root");
 # Specify data output root file name
 my_proc.set_output_file("larlite_vertex.root")
 
-mcvtx = fmwk.MakeMCVertex()
+mcvtx = fmwk.MakeSingleParticleVertex()
 mcvtx.SetXOffset(0.7)
 my_proc.add_process(mcvtx)
 
