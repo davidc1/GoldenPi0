@@ -25,6 +25,11 @@ namespace larlite {
     _tree->Branch("_ehit1", &_ehit1, "ehit1/D" );
     _tree->Branch("_qhit1", &_qhit1, "qhit1/D" );
 
+    _tree->Branch("_wmin0",&_wmin0,"wmin0/I");
+    _tree->Branch("_wmax0",&_wmax0,"wmax0/I");
+    _tree->Branch("_wmin1",&_wmin1,"wmin1/I");
+    _tree->Branch("_wmax1",&_wmax1,"wmax1/I");
+
     _tree->Branch("_angle", &_angle, "angle/D" );
 
     if (_hit_tree) delete _hit_tree;
@@ -121,6 +126,9 @@ namespace larlite {
 
     // reset charge integrators
     _ehit0 = _qhit0 = _ehit1 = _qhit1 = 0;
+
+    _wmin0 = _wmin1 = 9000;
+    _wmax0 = _wmax1 = 0;
 
     // reset MCBTAlg
     _bt_algo.Reset(g4_trackid_v,*ev_simch);
@@ -231,10 +239,14 @@ namespace larlite {
 	  if (shrmapidx[idx] == 0) {
 	    _ehit0 += max_edep;
 	    _qhit0 += hit.Integral();
+	    if (ch < _wmin0) _wmin0 = ch;
+	    if (ch > _wmax0) _wmax0 = ch;
 	  }
 	  if (shrmapidx[idx] == 1) {
 	    _ehit1 += max_edep;
 	    _qhit1 += hit.Integral();
+	    if (ch < _wmin1) _wmin1 = ch;
+	    if (ch > _wmax1) _wmax1 = ch;
 	  }
 
 	  _ch   = ch;
