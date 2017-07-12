@@ -45,6 +45,22 @@ class DeadWires():
                 plane  = wID.Plane
                 wire   = wID.Wire
                 self._badchannels[plane].append( wire )
+
+    def getBadCoveragePlane(self, wmin, wmax, plane):
+
+        badchan_v = self._badchannels[pl]
+
+        badchan = 0
+
+        for chan in badchan_v:
+            
+            if (chan < wmin): continue
+            
+            badchan += 1
+            
+            if (chan > wmax): break;
+
+        return float(badchan)/(wmax-wmin)
                 
 
     def getBadCoverage(self, x, y, z, ROI):
