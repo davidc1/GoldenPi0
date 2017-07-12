@@ -284,8 +284,6 @@ namespace larlite {
 
       auto const& mcshr = pi0_mcshower_v.at( mcidx );
 
-      auto const& rcidx = MCRCmatch_v[mcidx];
- 
       _mc_shr_e = mcshr.DetProfile().E();
       _mc_shr_x = mcshr.DetProfile().X();
       _mc_shr_y = mcshr.DetProfile().Y();
@@ -305,7 +303,8 @@ namespace larlite {
 			( (_mc_shr_y - _rc_vtx_y) * (_mc_shr_y - _rc_vtx_y) ) +
 			( (_mc_shr_z - _rc_vtx_z) * (_mc_shr_z - _rc_vtx_z) ) );
 
-
+      auto const& rcidx = MCRCmatch_v[mcidx];
+      
 
       if (rcidx == -1) {
 	//std::cout << "\t\t MCshower did not find a match..." << std::endl;
@@ -380,8 +379,11 @@ namespace larlite {
   std::vector<int> CCpi0ShowerMatchingMC::Match(const std::vector<larlite::mcshower>& mcs_v,
 						const std::vector<larlite::shower>&   shr_v) {
 
-    // now match to true showers
+    // match mc -> reco index
     std::vector<int> matched_indices;
+    // keep track of dot product for match
+    std::vector<double> matched_dot;
+
 
     // find best matching RC shower for each MC shower
     for (auto const& mcshr : mcs_v) {
@@ -406,8 +408,18 @@ namespace larlite {
       }// for all sorted indices
       
       matched_indices.push_back( idxmax );
+      matched_dot.push_back( dotmax );
 
     }// for all true showers
+
+    // if we have RC showers used twice -> filter out the "worse" match
+    if (matched_indices[0] == matched_indices[1]) {
+
+      if (matched_dot[0] > matched_dot[1])
+	matched_indices[1] = -1;
+      else
+	matched_indices[0] = -1;
+    }
     
     return matched_indices;
     

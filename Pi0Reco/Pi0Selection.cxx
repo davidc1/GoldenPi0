@@ -7,6 +7,8 @@ namespace larlite {
 
   bool Pi0Selection::initialize() {
 
+    _ctr = -1;
+
     if (_pi0_tree) delete _pi0_tree;
     _pi0_tree = new TTree("_pi0_tree","pi0 tree");
     _pi0_tree->Branch("ip",&_ip,"ip/D");
@@ -16,6 +18,10 @@ namespace larlite {
     _pi0_tree->Branch("rh",&_rh,"rh/D");
     _pi0_tree->Branch("angle",&_angle,"angle/D");
     _pi0_tree->Branch("mass",&_mass,"mass/D");
+    _pi0_tree->Branch("run",&_run,"run/I");
+    _pi0_tree->Branch("sub",&_sub,"sub/I");
+    _pi0_tree->Branch("evt",&_evt,"evt/I");
+    _pi0_tree->Branch("ctr",&_ctr,"ctr/I");
     
     if (_tree) delete _tree;
     _tree = new TTree("_tree","tree");
@@ -58,6 +64,12 @@ namespace larlite {
     _tree->Branch("mce1",&_mce1,"mce1/D");
 
     _tree->Branch("nrecoshr",&_nrecoshr,"nrecoshr/I");
+
+    // event-wise information
+    _tree->Branch("run",&_run,"run/I");
+    _tree->Branch("sub",&_sub,"sub/I");
+    _tree->Branch("evt",&_evt,"evt/I");
+    _tree->Branch("ctr",&_ctr,"ctr/I");
     
     return true;
   }
@@ -65,6 +77,8 @@ namespace larlite {
   bool Pi0Selection::analyze(storage_manager* storage) {
 
     _npi0     = 0;
+
+    _ctr += 1;
 
     std::vector<larlite::mcshower> pi0_gamma_v;
 
@@ -75,6 +89,10 @@ namespace larlite {
     auto ev_mct = storage->get_data<event_mctruth>("generator");
 
     storage->set_id(storage->run_id(),storage->subrun_id(),storage->event_id());
+
+    _evt = storage->event_id();
+    _sub = storage->subrun_id();
+    _run = storage->run_id();
 
     _nrecoshr = ev_shr->size();
 
@@ -294,7 +312,7 @@ namespace larlite {
 	shr_pairs.push_back( std::make_pair(i,j) );
       }
     }
-      
+
     return shr_pairs;
   }
 

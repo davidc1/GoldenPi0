@@ -107,6 +107,7 @@ namespace larlite {
     double _mcvtxx, _mcvtxy, _mcvtxz;
     double _rcvtxx, _rcvtxy, _rcvtxz;
     int    _nrecoshr;
+    int    _run, _sub, _evt, _ctr;
 
     TTree *_pi0_tree;
     
