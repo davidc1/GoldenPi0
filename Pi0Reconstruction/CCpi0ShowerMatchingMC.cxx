@@ -18,6 +18,8 @@ namespace larlite {
 
   bool CCpi0ShowerMatchingMC::initialize() {
 
+    _SCE = new larutil::SpaceChargeMicroBooNE();
+
     _w2cm  = larutil::GeometryHelper::GetME()->WireToCm();
     _t2cm  = larutil::GeometryHelper::GetME()->TimeToCm();
 
@@ -34,6 +36,9 @@ namespace larlite {
     _tree->Branch("_mc_vtx_x",&_mc_vtx_x,"mc_vtx_x/D");
     _tree->Branch("_mc_vtx_y",&_mc_vtx_y,"mc_vtx_y/D");
     _tree->Branch("_mc_vtx_z",&_mc_vtx_z,"mc_vtx_z/D");
+    _tree->Branch("_mc_vtx_x_sce",&_mc_vtx_x_sce,"mc_vtx_x_sce/D");
+    _tree->Branch("_mc_vtx_y_sce",&_mc_vtx_y_sce,"mc_vtx_y_sce/D");
+    _tree->Branch("_mc_vtx_z_sce",&_mc_vtx_z_sce,"mc_vtx_z_sce/D");
     _tree->Branch("_rc_vtx_x",&_rc_vtx_x,"rc_vtx_x/D");
     _tree->Branch("_rc_vtx_y",&_rc_vtx_y,"rc_vtx_y/D");
     _tree->Branch("_rc_vtx_z",&_rc_vtx_z,"rc_vtx_z/D");
@@ -68,10 +73,14 @@ namespace larlite {
     _tree->Branch("_mcradlen2",&_mcradlen2,"mcradlen2/D");
 
     // reco cluster info
+    _tree->Branch("_rc_shr_x",&_rc_shr_x,"rc_shr_x/D");
+    _tree->Branch("_rc_shr_y",&_rc_shr_y,"rc_shr_y/D");
+    _tree->Branch("_rc_shr_z",&_rc_shr_z,"rc_shr_z/D");
     _tree->Branch("_ip",&_ip,"ip/D");
     _tree->Branch("_lin",&_lin,"lin/D");
     _tree->Branch("_ssv",&_ssv,"ssv/D");
     _tree->Branch("_slope",&_slope,"slope/D");
+    _tree->Branch("_rcradlen",&_rcradlen,"rcradlen/D");
 
     // MC -> RC shower comparisons
     _tree->Branch("_dot",&_dot,"dot/D");
@@ -142,6 +151,13 @@ namespace larlite {
 	_mc_vtx_x = part.Trajectory().at( 0 ).X();
 	_mc_vtx_y = part.Trajectory().at( 0 ).Y();
 	_mc_vtx_z = part.Trajectory().at( 0 ).Z();
+
+	// get spacecharge correction
+	auto sce_corr = _SCE->GetPosOffsets(_mc_vtx_x,_mc_vtx_y,_mc_vtx_z);
+	_mc_vtx_x_sce = _mc_vtx_x - sce_corr.at(0) + 0.7;
+	_mc_vtx_y_sce = _mc_vtx_y + sce_corr.at(1);
+	_mc_vtx_z_sce = _mc_vtx_z + sce_corr.at(2);
+	
       }
       if ( ((part.PdgCode() == 13) || (part.PdgCode() == 2212) || (fabs(part.PdgCode()) == 211)) and
 	   (part.StatusCode() == 1) and
@@ -220,6 +236,7 @@ namespace larlite {
     _mc_shr2_x  = mcshr2.DetProfile().X();
     _mc_shr2_y  = mcshr2.DetProfile().Y();
     _mc_shr2_z  = mcshr2.DetProfile().Z();
+
     double mom2 = sqrt ( ( mcshr2.DetProfile().Px() * mcshr2.DetProfile().Px() ) +
 			 ( mcshr2.DetProfile().Py() * mcshr2.DetProfile().Py() ) +
 			 ( mcshr2.DetProfile().Pz() * mcshr2.DetProfile().Pz() ) );
@@ -284,9 +301,11 @@ namespace larlite {
       _mc_shr_py = mcshr.DetProfile().Py() / momentum;
       _mc_shr_pz = mcshr.DetProfile().Pz() / momentum;
 
-      _mcradlen = sqrt( ( (_mc_shr_x - _mc_vtx_x) * (_mc_shr_x - _mc_vtx_x) ) +
-			( (_mc_shr_y - _mc_vtx_y) * (_mc_shr_y - _mc_vtx_y) ) +
-			( (_mc_shr_z - _mc_vtx_z) * (_mc_shr_z - _mc_vtx_z) ) );
+      _mcradlen = sqrt( ( (_mc_shr_x - _rc_vtx_x) * (_mc_shr_x - _rc_vtx_x) ) +
+			( (_mc_shr_y - _rc_vtx_y) * (_mc_shr_y - _rc_vtx_y) ) +
+			( (_mc_shr_z - _rc_vtx_z) * (_mc_shr_z - _rc_vtx_z) ) );
+
+
 
       if (rcidx == -1) {
 	std::cout << "\t\t MCshower did not find a match..." << std::endl;
@@ -305,8 +324,18 @@ namespace larlite {
 
       _erc = rcshr.Energy();
 
-      _strt = (rcshr.ShowerStart() - mcshr.DetProfile().Position().Vect()).Mag();     
+      _strt = (rcshr.ShowerStart() - mcshr.DetProfile().Position().Vect()).Mag();
 
+      auto rcstart = rcshr.ShowerStart();
+
+      _rc_shr_x = rcstart.X();
+      _rc_shr_y = rcstart.Y();
+      _rc_shr_z = rcstart.Z();
+
+      _rcradlen = sqrt( ( (rcstart.X() - _rc_vtx_x) * (rcstart.X() - _rc_vtx_x) ) +
+			( (rcstart.Y() - _rc_vtx_y) * (rcstart.Y() - _rc_vtx_y) ) +
+			( (rcstart.Z() - _rc_vtx_z) * (rcstart.Z() - _rc_vtx_z) ) );
+      
       _tree->Fill();
 
 
