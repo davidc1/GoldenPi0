@@ -275,7 +275,7 @@ namespace larlite {
     for (size_t i=0; i < ev_shower->size(); i++) 
       reco_shower_v.push_back( ev_shower->at(i) );
 
-    std::cout << "There are " << reco_shower_v.size() << " reco showers in the event" << std::endl;
+    //std::cout << "There are " << reco_shower_v.size() << " reco showers in the event" << std::endl;
     
     // MC <-> RC matching
     auto MCRCmatch_v = Match(pi0_mcshower_v, reco_shower_v);
@@ -308,7 +308,7 @@ namespace larlite {
 
 
       if (rcidx == -1) {
-	std::cout << "\t\t MCshower did not find a match..." << std::endl;
+	//std::cout << "\t\t MCshower did not find a match..." << std::endl;
 	_dot  = -1;
 	_erc  = -1;
 	_strt = -1;

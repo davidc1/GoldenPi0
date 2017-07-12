@@ -25,10 +25,11 @@ my_proc.set_io_mode(fmwk.storage_manager.kBOTH)
 my_proc.set_ana_output_file("ana.root");
 
 # Specify data output root file name
-my_proc.set_output_file("larlite_vertex.root")
+my_proc.set_output_file("/a/data/amsterdam/dcaratelli/mcc81/nue_cosmics/larlite_vertex.root")
 
 mcvtx = fmwk.MakeMCVertex()
 mcvtx.SetXOffset(0.7)
+mcvtx.FilterEvents(True)
 my_proc.add_process(mcvtx)
 
 my_proc.set_data_to_write(fmwk.data.kMCShower,    "mcreco"        )
@@ -38,6 +39,7 @@ my_proc.set_data_to_write(fmwk.data.kVertex,      "mcvertex"      )
 my_proc.set_data_to_write(fmwk.data.kCluster,     "pandoraCosmic" )
 my_proc.set_data_to_write(fmwk.data.kAssociation, "pandoraCosmic" )
 my_proc.set_data_to_write(fmwk.data.kHit,         "gaushit"       )
+#my_proc.set_data_to_write(fmwk.data.kSimChannel,  "largeant"      )
 
 #my_proc.set_data_to_write(fmwk.data.kVertex,'mcvertex')
 
@@ -47,6 +49,7 @@ print
 
 ctr = 0
 
+#my_proc.enable_event_alignment(False)
 my_proc.enable_filter(True)
 
 my_proc.run()

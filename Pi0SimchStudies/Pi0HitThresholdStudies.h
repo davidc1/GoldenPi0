@@ -21,6 +21,8 @@
 
 #include "TTree.h"
 
+#include <map>
+
 namespace larlite {
   /**
      \class Pi0HitThresholdStudies
@@ -33,6 +35,7 @@ namespace larlite {
     /// Default constructor
     Pi0HitThresholdStudies()
       : _tree(nullptr)
+      , _hit_tree(nullptr)
       { _name="Pi0HitThresholdStudies"; _fout=0;}
 
     /// Default destructor
@@ -46,10 +49,15 @@ namespace larlite {
 
     void setClusterProducer(std::string s) { _cluster_producer = s; }
     void SaveClusters(bool on) { _save_clusters = on; }
+    void AvoidDuplicateHits(bool on) { _avoid_duplicate_ticks = on; }
 
   protected:
 
+    std::pair<int,int> getTimeSubset(const int& ch, const int& tstart, const int& tend);
+
     bool _save_clusters;
+    
+    bool _avoid_duplicate_ticks;
 
     // hit brack-tracking tool
     ::btutil::MCBTAlg _bt_algo;
@@ -61,6 +69,15 @@ namespace larlite {
     double _etrue0, _edep0, _ehit0, _qhit0;
     double _etrue1, _edep1, _ehit1, _qhit1;
     double _angle;
+    
+    TTree* _hit_tree;
+    int    _ch;
+    double _q, _eall, _eshr, _adc;
+
+    std::vector< std::vector<std::pair<int,int> > > _chTickMap;
+
+    // map linking channel to ide.Energy for each channel
+    std::vector< std::map< int, double> > _chIDEmap;
     
   };
 }

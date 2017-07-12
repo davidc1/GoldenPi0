@@ -22,7 +22,7 @@ namespace larlite {
   bool MakeSingleParticleVertex::analyze(storage_manager* storage) {
 
     auto ev_mctruth= storage->get_data<event_mctruth>("generator");
-    if(!ev_mctruth || !ev_mctruth->size() ) return false;
+    if(!ev_mctruth ) return false;
 
     auto nu = ev_mctruth->at(0).GetNeutrino();
     auto parts = ev_mctruth->at(0).GetParticles();
@@ -65,7 +65,7 @@ namespace larlite {
 
     std::cout << "created vertex @ [ " << xyz[0] << ", " << xyz[1] << ", " << xyz[2] << "] " << std::endl;
     
-    vertex new_vtx(xyz) ;
+    vertex new_vtx(xyz);
     ev_vtx->push_back(new_vtx);
 
     return true;
