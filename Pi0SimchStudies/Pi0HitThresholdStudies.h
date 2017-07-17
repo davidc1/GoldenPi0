@@ -69,6 +69,7 @@ namespace larlite {
     double _etrue0, _edep0, _ehit0, _qhit0;
     double _etrue1, _edep1, _ehit1, _qhit1;
     double _angle;
+    int    _wmin0, _wmax0, _wmin1, _wmax1;
     
     TTree* _hit_tree;
     int    _ch;
