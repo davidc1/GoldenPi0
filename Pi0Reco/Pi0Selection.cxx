@@ -22,6 +22,9 @@ namespace larlite {
     _pi0_tree->Branch("sub",&_sub,"sub/I");
     _pi0_tree->Branch("evt",&_evt,"evt/I");
     _pi0_tree->Branch("ctr",&_ctr,"ctr/I");
+    _pi0_tree->Branch("npi0",&_npi0,"npi0/I");
+    _pi0_tree->Branch("ngamma",&_ngamma,"ngamma/I");
+    _pi0_tree->Branch("ipvtx",&_ipvtx,"ipvtx/D");
     
     if (_tree) delete _tree;
     _tree = new TTree("_tree","tree");
@@ -49,6 +52,17 @@ namespace larlite {
     _tree->Branch("mc1y",&_mc1y,"mc1y/D");
     _tree->Branch("mc1z",&_mc1z,"mc1z/D");
 
+    // vertex (true and reco)
+    _tree->Branch("mcvtxx",&_mcvtxx,"mcvtxx/D");
+    _tree->Branch("mcvtxy",&_mcvtxy,"mcvtxy/D");
+    _tree->Branch("mcvtxz",&_mcvtxz,"mcvtxz/D");
+    _tree->Branch("rcvtxx",&_rcvtxx,"rcvtxx/D");
+    _tree->Branch("rcvtxy",&_rcvtxy,"rcvtxy/D");
+    _tree->Branch("rcvtxz",&_rcvtxz,"rcvtxz/D");
+
+    // vertex -> IP midpoint separation [reconstructed quantities only]
+    _tree->Branch("ipvtx",&_ipvtx,"ipvtx/D");
+
     // rc -> mc separation
     _tree->Branch("d0",&_d0,"d0/D");
     _tree->Branch("d1",&_d1,"d1/D");
@@ -62,6 +76,13 @@ namespace larlite {
     _tree->Branch("rce1",&_rce1,"rce1/D");
     _tree->Branch("mce0",&_mce0,"mce0/D");
     _tree->Branch("mce1",&_mce1,"mce1/D");
+    _tree->Branch("mcedep0",&_mcedep0,"mcedep0/D");
+    _tree->Branch("mcedep1",&_mcedep1,"mcedep1/D");
+
+    // true pi0 information
+    _tree->Branch("pi0px",&_pi0px,"pi0px/D");
+    _tree->Branch("pi0py",&_pi0py,"pi0py/D");
+    _tree->Branch("pi0pz",&_pi0pz,"pi0pz/D");
 
     _tree->Branch("nrecoshr",&_nrecoshr,"nrecoshr/I");
 
@@ -77,6 +98,7 @@ namespace larlite {
   bool Pi0Selection::analyze(storage_manager* storage) {
 
     _npi0     = 0;
+    _ngamma   = 0;
 
     _ctr += 1;
 
@@ -122,6 +144,8 @@ namespace larlite {
 	  _mcvtxy = _mcvtx[1];
 	  _mcvtxz = _mcvtx[2];
 	}
+	if ( (p.StatusCode() == 1) && ( (p.PdgCode() == 22) || (p.PdgCode() == 11) ) )
+	  _ngamma += 1;
       }// for all particles
 
       // get ready to store the showers from the pi0
@@ -139,10 +163,10 @@ namespace larlite {
     }// if we should do mc-matching
 
     auto vtx = ev_vtx->at(0);
-    _vtx = ::geoalgo::Point_t(vtx.X(),vtx.Y(),vtx.Z());
-    _rcvtxx = _vtx[0];
-    _rcvtxy = _vtx[1];
-    _rcvtxz = _vtx[2];
+    _rcvtx  = ::geoalgo::Point_t(vtx.X(),vtx.Y(),vtx.Z());
+    _rcvtxx = _rcvtx[0];
+    _rcvtxy = _rcvtx[1];
+    _rcvtxz = _rcvtx[2];
 
     // first, filter showers and identify subset to be used for pi0 selection
     auto selected_shower_idx_v = FilterShowers(ev_shr);
@@ -154,15 +178,14 @@ namespace larlite {
     auto shr_pairs_idx_v = Combinatorics( selected_shower_idx_v );
 
     // keep track of which pair leads to the best match, given the IP value
-    double bestIP = 4.0;
+    double bestIP = 40000.0;
     size_t bestPair = 0;
+    _mass = -1;
 
     for (size_t pidx = 0; pidx < shr_pairs_idx_v.size(); pidx++ ) {
 
       auto const& shr_pair = shr_pairs_idx_v.at(pidx);
       
-      _mass = -1;
-
       auto const& shr1 = ev_shr->at(shr_pair.first);
       auto const& shr2 = ev_shr->at(shr_pair.second);
 
@@ -180,19 +203,21 @@ namespace larlite {
       if ( shr1.Energy() < shr2.Energy() ) {
 	_el = shr1.Energy();
 	_eh = shr2.Energy();
-	_rl = HL1.Start().Dist( _vtx );
-	_rh = HL2.Start().Dist( _vtx );
+	_rl = HL1.Start().Dist( _rcvtx );
+	_rh = HL2.Start().Dist( _rcvtx );
       }
       else {
 	_el = shr2.Energy();
 	_eh = shr1.Energy();
-	_rl = HL2.Start().Dist( _vtx );
-	_rh = HL1.Start().Dist( _vtx );
+	_rl = HL2.Start().Dist( _rcvtx );
+	_rh = HL1.Start().Dist( _rcvtx );
       }
       
       ::geoalgo::Point_t pt1, pt2;
       _ip = _geoAlgo.SqDist(HL1,HL2,pt1,pt2);
       _angle = HL1.Dir().Angle( HL2.Dir() );
+
+      _ipvtx = _rcvtx.Dist( ((pt1+pt2)/2.) );
 
       if (_ip < bestIP) { bestIP = _ip; bestPair = pidx; }
       _mass  = sqrt( 2 * shr1.Energy() * shr2.Energy() * ( 1 - cos(_angle) ) );
@@ -201,10 +226,8 @@ namespace larlite {
 
     }// for all shower-pairs
 
-    _mass = -1;
-
     // did we find a pi0 in this event? if so do RC <-> MC matching and fill additional TTree information
-    if ( (bestIP < 4.0) && (pi0_gamma_v.size() == 2) ) {
+    if ( (_mass != -1) && (pi0_gamma_v.size() == 2) ) {
 
       std::vector<larlite::shower> rcshr_v = { ev_shr->at( shr_pairs_idx_v[bestPair].first) , ev_shr->at( shr_pairs_idx_v[bestPair].second) };
 
@@ -223,6 +246,8 @@ namespace larlite {
       _mcedep0 = mcs0.DetProfile().E();
       _mcedep1 = mcs1.DetProfile().E();
 
+      _ip = bestIP;
+
       ::geoalgo::Point_t rc0strt(shr0.ShowerStart().X(), shr0.ShowerStart().Y(), shr0.ShowerStart().Z() );
       ::geoalgo::Point_t rc1strt(shr1.ShowerStart().X(), shr1.ShowerStart().Y(), shr1.ShowerStart().Z() );
 
@@ -239,6 +264,12 @@ namespace larlite {
       rc1dir.Normalize();
       mc0dir.Normalize();
       mc1dir.Normalize();
+
+      auto pi0mom = (rc0dir * _rce0) + (rc1dir * _rce1);
+      pi0mom.Normalize();
+      _pi0px = pi0mom[0];
+      _pi0py = pi0mom[1];
+      _pi0pz = pi0mom[2];
 
       _angle0 = rc0dir.Angle( mc0dir );
       _angle1 = rc1dir.Angle( mc1dir );
@@ -294,7 +325,7 @@ namespace larlite {
 
       ::geoalgo::Point_t strt(shr.ShowerStart().X(),shr.ShowerStart().Y(),shr.ShowerStart().Z());
 
-      if ( strt.Dist( _vtx ) > _radlenmax ) continue;
+      if ( strt.Dist( _rcvtx ) > _radlenmax ) continue;
 
       filtered_shower_idx_v.push_back( i );
 

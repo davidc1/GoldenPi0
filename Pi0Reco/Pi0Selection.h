@@ -74,7 +74,7 @@ namespace larlite {
     std::string _vtx_producer;
 
     // reconstructed and true vertex coordinates
-    ::geoalgo::Point_t _vtx, _mcvtx;
+    ::geoalgo::Point_t _rcvtx, _mcvtx;
 
     // vector where to store true gamma MCshower objects
     std::vector<larlite::mcshower> pi0_gamma_v;
@@ -103,9 +103,12 @@ namespace larlite {
     double _angle0, _angle1;
     double _d0, _d1;
     double _rce0, _rce1, _mce0, _mce1, _mcedep0, _mcedep1;
-    int    _npi0;
+    int    _npi0;   // number of pi0s coming out of the interaction
+    int    _ngamma; // number of showers coming out of the interaction
+    double _pi0px, _pi0py, _pi0pz;
     double _mcvtxx, _mcvtxy, _mcvtxz;
     double _rcvtxx, _rcvtxy, _rcvtxz;
+    double _ipvtx;
     int    _nrecoshr;
     int    _run, _sub, _evt, _ctr;
 

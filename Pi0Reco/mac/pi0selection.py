@@ -34,6 +34,7 @@ ana.setRadLenMax(80)
 ana.setIPMax(4.0)
 ana.setAngleMin(20)
 ana.setVtxProducer("mcvertex")
+ana.doMCMatch(True)
 my_proc.add_process(ana)
 
 #my_proc.set_data_to_write(fmwk.data.kMCShower,    "mcreco"        )
