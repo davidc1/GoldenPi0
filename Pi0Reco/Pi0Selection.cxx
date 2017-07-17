@@ -171,16 +171,21 @@ namespace larlite {
     // first, filter showers and identify subset to be used for pi0 selection
     auto selected_shower_idx_v = FilterShowers(ev_shr);
 
-    // how many showers do we have? less then 2? then we are done here...
-    if (selected_shower_idx_v.size() < 2) return true;
-
-    // get shower-pair combinatorics
-    auto shr_pairs_idx_v = Combinatorics( selected_shower_idx_v );
-
     // keep track of which pair leads to the best match, given the IP value
     double bestIP = 40000.0;
     size_t bestPair = 0;
     _mass = -1;
+
+    // how many showers do we have? less then 2? then we are done here...
+    if (selected_shower_idx_v.size() < 2) {
+      _pi0_tree->Fill();
+      return true;
+    }
+    
+    // get shower-pair combinatorics
+    auto shr_pairs_idx_v = Combinatorics( selected_shower_idx_v );
+
+
 
     for (size_t pidx = 0; pidx < shr_pairs_idx_v.size(); pidx++ ) {
 
