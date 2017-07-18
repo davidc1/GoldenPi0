@@ -41,7 +41,12 @@ namespace larlite {
     Pi0Selection()
       : _tree(nullptr)
       , _pi0_tree(nullptr)
-      { _name="Pi0Selection"; _fout=0;}
+      , _shower_tree(nullptr)
+      { 
+	_name="Pi0Selection";
+	_fout=0;
+	_edepmin = 0;
+      }
 
     /// Default destructor
     virtual ~Pi0Selection(){}
@@ -58,6 +63,7 @@ namespace larlite {
     void setIPMax(double ip) { _ipmax = ip; }
     void setAngleMin(double amin) { _anglemin = amin; }
     void doMCMatch(bool on) { _mcmatch = on; }
+    void EDepMin(double e) { _edepmin = e; }
 
   protected:
 
@@ -89,6 +95,8 @@ namespace larlite {
     double _ipmax;
     /// minimum opening angle allowed
     double _anglemin;
+    /// minimum truth-level E de
+    double _edepmin;
 
     ::geoalgo::GeoAlgo _geoAlgo;
 
@@ -109,10 +117,20 @@ namespace larlite {
     double _mcvtxx, _mcvtxy, _mcvtxz;
     double _rcvtxx, _rcvtxy, _rcvtxz;
     double _ipvtx;
-    int    _nrecoshr;
+    int    _nrecoshr, _nrecoshrcut;
     int    _run, _sub, _evt, _ctr;
 
     TTree *_pi0_tree;
+
+    TTree *_shower_tree;
+    double _rce;
+    double _mce;
+    double _mcedep;
+    double _anglediff;
+    double _rcx, _rcy, _rcz, _rcpx, _rcpy, _rcpz;
+    double _dwall;
+
+    ::geoalgo::AABox_t _TPC;
     
   };
 }

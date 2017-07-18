@@ -35,6 +35,7 @@ ana.setIPMax(4.0)
 ana.setAngleMin(20)
 ana.setVtxProducer("mcvertex")
 ana.doMCMatch(True)
+ana.EDepMin(0)
 my_proc.add_process(ana)
 
 #my_proc.set_data_to_write(fmwk.data.kMCShower,    "mcreco"        )
@@ -52,8 +53,6 @@ print  "Finished configuring ana_processor. Start event loop!"
 print
 
 ctr = 0
-
-my_proc.enable_filter(True)
 
 my_proc.run()
 

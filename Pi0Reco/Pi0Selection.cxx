@@ -9,6 +9,8 @@ namespace larlite {
 
     _ctr = -1;
 
+    _TPC = ::geoalgo::AABox_t(0,-116,0,256,116,1036);
+
     if (_pi0_tree) delete _pi0_tree;
     _pi0_tree = new TTree("_pi0_tree","pi0 tree");
     _pi0_tree->Branch("ip",&_ip,"ip/D");
@@ -83,14 +85,45 @@ namespace larlite {
     _tree->Branch("pi0px",&_pi0px,"pi0px/D");
     _tree->Branch("pi0py",&_pi0py,"pi0py/D");
     _tree->Branch("pi0pz",&_pi0pz,"pi0pz/D");
+    _tree->Branch("npi0",&_npi0,"npi0/I");
+    _tree->Branch("ngamma",&_ngamma,"ngamma/I");
 
     _tree->Branch("nrecoshr",&_nrecoshr,"nrecoshr/I");
+    _tree->Branch("nrecoshrcut",&_nrecoshrcut,"nrecoshrcut/I");
 
     // event-wise information
     _tree->Branch("run",&_run,"run/I");
     _tree->Branch("sub",&_sub,"sub/I");
     _tree->Branch("evt",&_evt,"evt/I");
     _tree->Branch("ctr",&_ctr,"ctr/I");
+
+    /// 
+    /// Tree to hold shower-by-shower information
+    /// for showers from a reconstructed pi0
+    ///
+    if (_shower_tree) delete _shower_tree;
+    _shower_tree = new TTree("_shower_tree","shower tree");
+    // rc -> mc angle
+    _shower_tree->Branch("anglediff",&_anglediff,"anglediff/D");
+    // reco & true energies
+    _shower_tree->Branch("rce",&_rce,"rce/D");
+    _shower_tree->Branch("mce",&_mce,"mce/D");
+    _shower_tree->Branch("mcedep",&_mcedep,"mcedep/D");
+    // shower position
+    _shower_tree->Branch("rcx",&_rcx,"rcx/D");
+    _shower_tree->Branch("rcy",&_rcy,"rcy/D");
+    _shower_tree->Branch("rcz",&_rcz,"rcz/D");
+    /// shower momentum
+    _shower_tree->Branch("rcpx",&_rcpx,"rcpx/D");
+    _shower_tree->Branch("rcpy",&_rcpy,"rcpy/D");
+    _shower_tree->Branch("rcpz",&_rcpz,"rcpz/D");
+    // shower distance to wall
+    _shower_tree->Branch("dwall",&_dwall,"dwall/D");
+    // neutrino vertex
+    _shower_tree->Branch("rcvtxx",&_rcvtxx,"rcvtxx/D");
+    _shower_tree->Branch("rcvtxy",&_rcvtxy,"rcvtxy/D");
+    _shower_tree->Branch("rcvtxz",&_rcvtxz,"rcvtxz/D");
+    
     
     return true;
   }
@@ -99,6 +132,7 @@ namespace larlite {
 
     _npi0     = 0;
     _ngamma   = 0;
+    _mass     = -1;
 
     _ctr += 1;
 
@@ -160,6 +194,13 @@ namespace larlite {
 
       }// for all MCShowers
 
+      // do we have at least 2 truth-showers with minimum edep?
+      if (_edepmin > 0) {
+	if (pi0_gamma_v.size() < 2) return true;
+	if ( (pi0_gamma_v[0].DetProfile().E() < _edepmin) || (pi0_gamma_v[1].DetProfile().E() < _edepmin) )
+	  return true;
+      }// if we should check for a minimum edep
+
     }// if we should do mc-matching
 
     auto vtx = ev_vtx->at(0);
@@ -171,139 +212,193 @@ namespace larlite {
     // first, filter showers and identify subset to be used for pi0 selection
     auto selected_shower_idx_v = FilterShowers(ev_shr);
 
+    _nrecoshrcut = selected_shower_idx_v.size();
+
     // keep track of which pair leads to the best match, given the IP value
-    double bestIP = 40000.0;
-    size_t bestPair = 0;
+    double bestIP    = 40000.0;
+    double bestAngle = -1;
+    double bestMass  = -1;
+    int    bestPair  = -1;
     _mass = -1;
 
-    // how many showers do we have? less then 2? then we are done here...
-    if (selected_shower_idx_v.size() < 2) {
-      _pi0_tree->Fill();
-      return true;
-    }
+    // if we have at least 2 shower candidates:
+    if (selected_shower_idx_v.size() >= 2) {
     
-    // get shower-pair combinatorics
-    auto shr_pairs_idx_v = Combinatorics( selected_shower_idx_v );
-
-
-
-    for (size_t pidx = 0; pidx < shr_pairs_idx_v.size(); pidx++ ) {
-
-      auto const& shr_pair = shr_pairs_idx_v.at(pidx);
+      // get shower-pair combinatorics
+      auto shr_pairs_idx_v = Combinatorics( selected_shower_idx_v );
       
-      auto const& shr1 = ev_shr->at(shr_pair.first);
-      auto const& shr2 = ev_shr->at(shr_pair.second);
+      for (size_t pidx = 0; pidx < shr_pairs_idx_v.size(); pidx++ ) {
+	
+	auto const& shr_pair = shr_pairs_idx_v.at(pidx);
+	
+	auto const& shr1 = ev_shr->at(shr_pair.first);
+	auto const& shr2 = ev_shr->at(shr_pair.second);
+	
+	// transform into half-line objects
+	auto const& srt1 = shr1.ShowerStart();
+	auto const& dir1 = shr1.Direction();
+	auto const& HL1  = geoalgo::HalfLine( srt1.X(), srt1.Y(), srt1.Z(),
+					      -dir1.X(),-dir1.Y(),-dir1.Z());
+	
+	auto const& srt2 = shr2.ShowerStart();
+	auto const& dir2 = shr2.Direction();
+	auto const& HL2  = geoalgo::HalfLine( srt2.X(), srt2.Y(), srt2.Z(),
+					      -dir2.X(),-dir2.Y(),-dir2.Z());
+	
+	if ( shr1.Energy() < shr2.Energy() ) {
+	  _el = shr1.Energy();
+	  _eh = shr2.Energy();
+	  _rl = HL1.Start().Dist( _rcvtx );
+	  _rh = HL2.Start().Dist( _rcvtx );
+	}
+	else {
+	  _el = shr2.Energy();
+	  _eh = shr1.Energy();
+	  _rl = HL2.Start().Dist( _rcvtx );
+	  _rh = HL1.Start().Dist( _rcvtx );
+	}
+	
+	::geoalgo::Point_t pt1, pt2;
+	_ip = sqrt( _geoAlgo.SqDist(HL1,HL2,pt1,pt2) );
+	_angle = HL1.Dir().Angle( HL2.Dir() );
+	
+	_ipvtx = _rcvtx.Dist( ((pt1+pt2)/2.) );
 
-      // transform into half-line objects
-      auto const& srt1 = shr1.ShowerStart();
-      auto const& dir1 = shr1.Direction();
-      auto const& HL1  = geoalgo::HalfLine( srt1.X(), srt1.Y(), srt1.Z(),
-					    -dir1.X(),-dir1.Y(),-dir1.Z());
+	// save mass value regardless
+	_mass  = sqrt( 2 * shr1.Energy() * shr2.Energy() * ( 1 - cos(_angle) ) );
+	
+	// does it pass out cuts?
+	if ( ( _ip < _ipmax ) && ( _angle > _anglemin * (3.14/180.) ) ) {
+	  // is it the best match?
+	  if (_ip < bestIP)
+	    { 
+	      bestIP    = _ip; 
+	      bestPair  = pidx; 
+	      bestAngle = _angle;
+	      bestMass  = _mass;
+	    }
+	}
+	
+	_pi0_tree->Fill();
+	
+      }// for all shower-pairs
 
-      auto const& srt2 = shr2.ShowerStart();
-      auto const& dir2 = shr2.Direction();
-      auto const& HL2  = geoalgo::HalfLine( srt2.X(), srt2.Y(), srt2.Z(),
-					    -dir2.X(),-dir2.Y(),-dir2.Z());
-
-      if ( shr1.Energy() < shr2.Energy() ) {
-	_el = shr1.Energy();
-	_eh = shr2.Energy();
-	_rl = HL1.Start().Dist( _rcvtx );
-	_rh = HL2.Start().Dist( _rcvtx );
-      }
-      else {
-	_el = shr2.Energy();
-	_eh = shr1.Energy();
-	_rl = HL2.Start().Dist( _rcvtx );
-	_rh = HL1.Start().Dist( _rcvtx );
-      }
       
-      ::geoalgo::Point_t pt1, pt2;
-      _ip = _geoAlgo.SqDist(HL1,HL2,pt1,pt2);
-      _angle = HL1.Dir().Angle( HL2.Dir() );
-
-      _ipvtx = _rcvtx.Dist( ((pt1+pt2)/2.) );
-
-      if (_ip < bestIP) { bestIP = _ip; bestPair = pidx; }
-      _mass  = sqrt( 2 * shr1.Energy() * shr2.Energy() * ( 1 - cos(_angle) ) );
-
-      _pi0_tree->Fill();
-
-    }// for all shower-pairs
-
-    // did we find a pi0 in this event? if so do RC <-> MC matching and fill additional TTree information
-    if ( (_mass != -1) && (pi0_gamma_v.size() == 2) ) {
-
-      std::vector<larlite::shower> rcshr_v = { ev_shr->at( shr_pairs_idx_v[bestPair].first) , ev_shr->at( shr_pairs_idx_v[bestPair].second) };
-
-      auto MCRCmatch = MCRCMatch( rcshr_v, pi0_gamma_v);
-
-      // we have all it takes to fill shower-level comparisons, let's start
-      auto shr0 = rcshr_v.at( MCRCmatch[0].first );
-      auto shr1 = rcshr_v.at( MCRCmatch[1].first );
-      auto mcs0 = pi0_gamma_v.at( MCRCmatch[0].second );
-      auto mcs1 = pi0_gamma_v.at( MCRCmatch[1].second );
-
-      _rce0    = shr0.Energy();
-      _rce1    = shr1.Energy();
-      _mce0    = mcs0.Start().E();
-      _mce1    = mcs1.Start().E();
-      _mcedep0 = mcs0.DetProfile().E();
-      _mcedep1 = mcs1.DetProfile().E();
-
-      _ip = bestIP;
-
-      ::geoalgo::Point_t rc0strt(shr0.ShowerStart().X(), shr0.ShowerStart().Y(), shr0.ShowerStart().Z() );
-      ::geoalgo::Point_t rc1strt(shr1.ShowerStart().X(), shr1.ShowerStart().Y(), shr1.ShowerStart().Z() );
-
-      ::geoalgo::Point_t mc0strt(mcs0.DetProfile().X(), mcs0.DetProfile().Y(), mcs0.DetProfile().Z() );
-      ::geoalgo::Point_t mc1strt(mcs1.DetProfile().X(), mcs1.DetProfile().Y(), mcs1.DetProfile().Z() );
-
-      ::geoalgo::Point_t rc0dir(shr0.Direction().X(), shr0.Direction().Y(), shr0.Direction().Z() );
-      ::geoalgo::Point_t rc1dir(shr1.Direction().X(), shr1.Direction().Y(), shr1.Direction().Z() );
-
-      ::geoalgo::Point_t mc0dir(mcs0.DetProfile().Px(), mcs0.DetProfile().Py(), mcs0.DetProfile().Pz() );
-      ::geoalgo::Point_t mc1dir(mcs1.DetProfile().Px(), mcs1.DetProfile().Py(), mcs1.DetProfile().Pz() );
-
-      rc0dir.Normalize();
-      rc1dir.Normalize();
-      mc0dir.Normalize();
-      mc1dir.Normalize();
-
-      auto pi0mom = (rc0dir * _rce0) + (rc1dir * _rce1);
-      pi0mom.Normalize();
-      _pi0px = pi0mom[0];
-      _pi0py = pi0mom[1];
-      _pi0pz = pi0mom[2];
-
-      _angle0 = rc0dir.Angle( mc0dir );
-      _angle1 = rc1dir.Angle( mc1dir );
+      _mass  = bestMass;
+      _angle = bestAngle * 180. / 3.14;
+      _ip    = bestIP;
       
-      _rc0x = rc0strt[0];
-      _rc0y = rc0strt[1];
-      _rc0z = rc0strt[2];
+      // did we find a pi0 in this event? if so do RC <-> MC matching and fill additional TTree information
+      if ( (bestPair != -1) && (pi0_gamma_v.size() == 2) ) {
+	
+	std::vector<larlite::shower> rcshr_v = { ev_shr->at( shr_pairs_idx_v[bestPair].first) , ev_shr->at( shr_pairs_idx_v[bestPair].second) };
+	
+	auto MCRCmatch = MCRCMatch( rcshr_v, pi0_gamma_v);
+	
+	// we have all it takes to fill shower-level comparisons, let's start
+	auto shr0 = rcshr_v.at( MCRCmatch[0].first );
+	auto shr1 = rcshr_v.at( MCRCmatch[1].first );
+	auto mcs0 = pi0_gamma_v.at( MCRCmatch[0].second );
+	auto mcs1 = pi0_gamma_v.at( MCRCmatch[1].second );
+	
+	_rce0    = shr0.Energy();
+	_rce1    = shr1.Energy();
+	_mce0    = mcs0.Start().E();
+	_mce1    = mcs1.Start().E();
+	_mcedep0 = mcs0.DetProfile().E();
+	_mcedep1 = mcs1.DetProfile().E();
+	
+	::geoalgo::Point_t rc0strt(shr0.ShowerStart().X(), shr0.ShowerStart().Y(), shr0.ShowerStart().Z() );
+	::geoalgo::Point_t rc1strt(shr1.ShowerStart().X(), shr1.ShowerStart().Y(), shr1.ShowerStart().Z() );
+	
+	::geoalgo::Point_t mc0strt(mcs0.DetProfile().X(), mcs0.DetProfile().Y(), mcs0.DetProfile().Z() );
+	::geoalgo::Point_t mc1strt(mcs1.DetProfile().X(), mcs1.DetProfile().Y(), mcs1.DetProfile().Z() );
+	
+	::geoalgo::Point_t rc0dir(shr0.Direction().X(), shr0.Direction().Y(), shr0.Direction().Z() );
+	::geoalgo::Point_t rc1dir(shr1.Direction().X(), shr1.Direction().Y(), shr1.Direction().Z() );
+	
+	::geoalgo::Point_t mc0dir(mcs0.DetProfile().Px(), mcs0.DetProfile().Py(), mcs0.DetProfile().Pz() );
+	::geoalgo::Point_t mc1dir(mcs1.DetProfile().Px(), mcs1.DetProfile().Py(), mcs1.DetProfile().Pz() );
+	
+	rc0dir.Normalize();
+	rc1dir.Normalize();
+	mc0dir.Normalize();
+	mc1dir.Normalize();
+	
+	auto pi0mom = (rc0dir * _rce0) + (rc1dir * _rce1);
+	pi0mom.Normalize();
+	_pi0px = pi0mom[0];
+	_pi0py = pi0mom[1];
+	_pi0pz = pi0mom[2];
+	
+	_angle0 = rc0dir.Angle( mc0dir );
+	_angle1 = rc1dir.Angle( mc1dir );
+	
+	_rc0x = rc0strt[0];
+	_rc0y = rc0strt[1];
+	_rc0z = rc0strt[2];
+	
+	_rc1x = rc1strt[0];
+	_rc1y = rc1strt[1];
+	_rc1z = rc1strt[2];
+	
+	_mc0x = mc0strt[0];
+	_mc0y = mc0strt[1];
+	_mc0z = mc0strt[2];
+	
+	_mc1x = mc1strt[0];
+	_mc1y = mc1strt[1];
+	_mc1z = mc1strt[2];
+	
+	_d0 = rc0strt.Dist( mc0strt );
+	_d1 = rc1strt.Dist( mc1strt );
 
-      _rc1x = rc1strt[0];
-      _rc1y = rc1strt[1];
-      _rc1z = rc1strt[2];
+	_ip    = bestIP;	
+	_angle = 180. * rc0dir.Angle( rc1dir ) / 3.14;
+	_mass  = sqrt( 2 * _rce0 * _rce1 * ( 1 - cos( rc0dir.Angle( rc1dir ) ) ) );
 
-      _mc0x = mc0strt[0];
-      _mc0y = mc0strt[1];
-      _mc0z = mc0strt[2];
+	// fill shower-by-shower tree
+	_rce = _rce0;
+	_mce = _mce0;
+	_mcedep = _mcedep0;
+	_anglediff = _angle0;
+	_rcx = _rc0x;
+	_rcy = _rc0y;
+	_rcz = _rc0z;
+	_rcpx = rc0dir[0];
+	_rcpy = rc0dir[1];
+	_rcpz = rc0dir[2];
+	auto HL  = geoalgo::HalfLine( _rcx, _rcy, _rcz, _rcpx, _rcpy, _rcpz);
+	auto pts = _geoAlgo.Intersection(HL,_TPC);
+	_dwall = 1036.;
+	if (pts.size() == 1)
+	  _dwall = pts[0].Dist( HL.Start() );
 
-      _mc1x = mc1strt[0];
-      _mc1y = mc1strt[1];
-      _mc1z = mc1strt[2];
+	_shower_tree->Fill();
 
-      _d0 = rc0strt.Dist( mc0strt );
-      _d1 = rc1strt.Dist( mc1strt );
+	_rce = _rce1;
+	_mce = _mce1;
+	_mcedep = _mcedep1;
+	_anglediff = _angle1;
+	_rcx = _rc1x;
+	_rcy = _rc1y;
+	_rcz = _rc1z;
+	_rcpx = rc1dir[0];
+	_rcpy = rc1dir[1];
+	_rcpz = rc1dir[2];
+	HL  = geoalgo::HalfLine( _rcx, _rcy, _rcz, _rcpx, _rcpy, _rcpz);
+	pts = _geoAlgo.Intersection(HL,_TPC);
+	_dwall = 1036.;
+	if (pts.size() == 1)
+	  _dwall = pts[0].Dist( HL.Start() );
 
-      _angle = 180. * rc0dir.Angle( rc1dir ) / 3.14;
-      _mass  = sqrt( 2 * _rce0 * _rce1 * ( 1 - cos( rc0dir.Angle( rc1dir ) ) ) );
+	_shower_tree->Fill();
+	
+      }// if a pi0 was reconstructed
 
-      _tree->Fill();
+    }// if a shower-pair was found
 
-    }
+    _tree->Fill();
 
     return true;
   }
@@ -313,6 +408,7 @@ namespace larlite {
     if (_fout) _fout->cd();
     if (_tree) _tree->Write();
     if (_pi0_tree) _pi0_tree->Write();
+    if (_shower_tree) _shower_tree->Write();
 
     return true;
   }
