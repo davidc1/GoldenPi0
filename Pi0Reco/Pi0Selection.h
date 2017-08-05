@@ -38,15 +38,7 @@ namespace larlite {
   public:
 
     /// Default constructor
-    Pi0Selection()
-      : _tree(nullptr)
-      , _pi0_tree(nullptr)
-      , _shower_tree(nullptr)
-      { 
-	_name="Pi0Selection";
-	_fout=0;
-	_edepmin = 0;
-      }
+    Pi0Selection();
 
     /// Default destructor
     virtual ~Pi0Selection(){}
@@ -64,6 +56,10 @@ namespace larlite {
     void setAngleMin(double amin) { _anglemin = amin; }
     void doMCMatch(bool on) { _mcmatch = on; }
     void EDepMin(double e) { _edepmin = e; }
+    void ApplyContainmentCorrection(bool on) { _containmentcorrection = on; }
+
+    /// shower containment correction
+    double ContainmentCorr(double dwall);
 
   protected:
 
@@ -114,6 +110,7 @@ namespace larlite {
     int    _npi0;   // number of pi0s coming out of the interaction
     int    _ngamma; // number of showers coming out of the interaction
     double _pi0px, _pi0py, _pi0pz;
+    double _pi0e, _pi0a; // energy and angle of the pi0
     double _mcvtxx, _mcvtxy, _mcvtxz;
     double _rcvtxx, _rcvtxy, _rcvtxz;
     double _ipvtx;
@@ -131,6 +128,9 @@ namespace larlite {
     double _dwall;
 
     ::geoalgo::AABox_t _TPC;
+
+    // apply containmnent correction
+    bool _containmentcorrection;
     
   };
 }
