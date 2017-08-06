@@ -76,11 +76,16 @@ namespace larlite {
     _tree->Branch("_rc_shr_x",&_rc_shr_x,"rc_shr_x/D");
     _tree->Branch("_rc_shr_y",&_rc_shr_y,"rc_shr_y/D");
     _tree->Branch("_rc_shr_z",&_rc_shr_z,"rc_shr_z/D");
+    _tree->Branch("_rc_shr_px",&_rc_shr_px,"rc_shr_px/D");
+    _tree->Branch("_rc_shr_py",&_rc_shr_py,"rc_shr_py/D");
+    _tree->Branch("_rc_shr_pz",&_rc_shr_pz,"rc_shr_pz/D");
     _tree->Branch("_ip",&_ip,"ip/D");
     _tree->Branch("_lin",&_lin,"lin/D");
     _tree->Branch("_ssv",&_ssv,"ssv/D");
     _tree->Branch("_slope",&_slope,"slope/D");
     _tree->Branch("_rcradlen",&_rcradlen,"rcradlen/D");
+    _tree->Branch("_dedx",&_dedx,"dedx/D");
+    _tree->Branch("_pitch",&_pitch,"pitch/D");
 
     // MC -> RC shower comparisons
     _tree->Branch("_dot",&_dot,"dot/D");
@@ -320,16 +325,26 @@ namespace larlite {
       _dot  = rcshr.Direction().Dot( mcshr.DetProfile().Momentum().Vect() );
       _dot /= mcshr.DetProfile().Momentum().Vect().Mag();
       _dot /= rcshr.Direction().Mag();
+      
+      _dedx = rcshr.dEdx_v().at(2);
 
       _erc = rcshr.Energy();
 
       _strt = (rcshr.ShowerStart() - mcshr.DetProfile().Position().Vect()).Mag();
+
+      auto geomH = larutil::GeometryHelper::GetME();
 
       auto rcstart = rcshr.ShowerStart();
 
       _rc_shr_x = rcstart.X();
       _rc_shr_y = rcstart.Y();
       _rc_shr_z = rcstart.Z();
+
+      _rc_shr_px = rcshr.Direction().X();
+      _rc_shr_py = rcshr.Direction().Y();
+      _rc_shr_pz = rcshr.Direction().Z();
+
+      _pitch     = geomH->GetPitch( rcshr.Direction(), 2);
 
       _rcradlen = sqrt( ( (rcstart.X() - _rc_vtx_x) * (rcstart.X() - _rc_vtx_x) ) +
 			( (rcstart.Y() - _rc_vtx_y) * (rcstart.Y() - _rc_vtx_y) ) +

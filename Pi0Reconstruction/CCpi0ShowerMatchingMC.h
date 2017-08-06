@@ -107,7 +107,10 @@ namespace larlite {
     double _mc_mass;
 
     double _rc_shr_x,  _rc_shr_y,  _rc_shr_z;
+    double _rc_shr_px,  _rc_shr_py,  _rc_shr_pz;
     double _rcradlen;
+    double _dedx;
+    double _pitch;
 
     // MC -> RC shower comparisons
     double _dot;

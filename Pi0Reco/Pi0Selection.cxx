@@ -3,6 +3,9 @@
 
 #include "Pi0Selection.h"
 
+#include "LArUtil/GeometryHelper.h"
+#include "LArUtil/Geometry.h"
+
 namespace larlite {
 
   Pi0Selection::Pi0Selection()
@@ -56,7 +59,13 @@ namespace larlite {
     _tree->Branch("rc1x",&_rc1x,"rc1x/D");
     _tree->Branch("rc1y",&_rc1y,"rc1y/D");
     _tree->Branch("rc1z",&_rc1z,"rc1z/D");
-
+    
+    // reconstruucted dEdx
+    _tree->Branch("dedx0",&_dedx0,"dedx0/D");
+    _tree->Branch("dedx1",&_dedx1,"dedx1/D");
+    _tree->Branch("pitch0",&_pitch0,"pitch0/D");
+    _tree->Branch("pitch1",&_pitch1,"pitch1/D");
+    
     // true shower positions
     _tree->Branch("mc0x",&_mc0x,"mc0x/D");
     _tree->Branch("mc0y",&_mc0y,"mc0y/D");
@@ -312,10 +321,10 @@ namespace larlite {
 	_rce0    = shr0.Energy();
 	_rce1    = shr1.Energy();
 
-	if (_containmentcorrection) {
-	  _rce0 *= ContainmentCorr(
-	  
-
+	//if (_containmentcorrection) {
+	//_rce0 *= ContainmentCorr(
+	
+	
 	::geoalgo::Point_t rc0strt(shr0.ShowerStart().X(), shr0.ShowerStart().Y(), shr0.ShowerStart().Z() );
 	::geoalgo::Point_t rc1strt(shr1.ShowerStart().X(), shr1.ShowerStart().Y(), shr1.ShowerStart().Z() );
 
@@ -338,6 +347,13 @@ namespace larlite {
 	_rc1x = rc1strt[0];
 	_rc1y = rc1strt[1];
 	_rc1z = rc1strt[2];
+
+	_dedx0 = shr0.dEdx_v().at(2);
+	_dedx1 = shr1.dEdx_v().at(2);
+
+	auto geomH = larutil::GeometryHelper::GetME();
+	_pitch0    = geomH->GetPitch( shr0.Direction(), 2);
+	_pitch1    = geomH->GetPitch( shr1.Direction(), 2);
 	
 	// did we find a pi0 in this event? if so do RC <-> MC matching and fill additional TTree information
 	if ( pi0_gamma_v.size() == 2 ) {

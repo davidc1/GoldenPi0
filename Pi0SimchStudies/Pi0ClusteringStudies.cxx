@@ -1,16 +1,18 @@
-#ifndef LARLITE_PI0HITTHRESHOLDSTUDIES_CXX
-#define LARLITE_PI0HITTHRESHOLDSTUDIES_CXX
+#ifndef LARLITE_PI0CLUSTERINGSTUDIES_CXX
+#define LARLITE_PI0CLUSTERINGSTUDIES_CXX
 
-#include "Pi0HitThresholdStudies.h"
+#include "Pi0ClusteringStudies.h"
 
 #include "DataFormat/simch.h"
 #include "DataFormat/mcshower.h"
+#include "DataFormat/shower.h"
+#include "DataFormat/pfpart.h"
 #include "DataFormat/cluster.h"
 #include "DataFormat/hit.h"
 
 namespace larlite {
 
-  bool Pi0HitThresholdStudies::initialize() {
+  bool Pi0ClusteringStudies::initialize() {
 
     if (_tree) delete _tree;
     _tree = new TTree("tree","tree");
@@ -18,12 +20,16 @@ namespace larlite {
     _tree->Branch("_etrue0",&_etrue0,"etrue0/D");
     _tree->Branch("_edep0", &_edep0, "edep0/D" );
     _tree->Branch("_qcol0", &_qcol0, "qcol0/D" );
+    _tree->Branch("_eclus0", &_eclus0, "eclus0/D" );
+    _tree->Branch("_qclus0", &_qclus0, "qclus0/D" );
     _tree->Branch("_ehit0", &_ehit0, "ehit0/D" );
     _tree->Branch("_qhit0", &_qhit0, "qhit0/D" );
 
     _tree->Branch("_etrue1",&_etrue1,"etrue1/D");
     _tree->Branch("_edep1", &_edep1, "edep1/D" );
     _tree->Branch("_qcol1", &_qcol1, "qcol1/D" );
+    _tree->Branch("_eclus1", &_eclus1, "eclus1/D" );
+    _tree->Branch("_qclus1", &_qclus1, "qclus1/D" );
     _tree->Branch("_ehit1", &_ehit1, "ehit1/D" );
     _tree->Branch("_qhit1", &_qhit1, "qhit1/D" );
 
@@ -47,18 +53,12 @@ namespace larlite {
     return true;
   }
   
-  bool Pi0HitThresholdStudies::analyze(storage_manager* storage) {
+  bool Pi0ClusteringStudies::analyze(storage_manager* storage) {
 
-    _chTickMap.clear();
-    _chTickMap = std::vector< std::vector< std::pair<int,int> > >(8500,std::vector<std::pair<int,int> >());
 
-    _chIDEmap.clear();
-    _chIDEmap = std::vector< std::map<int,double> >(8500,std::map<int,double>());
     
     // Retrieve mcshower data product
     auto ev_mcs   = storage->get_data<event_mcshower>("mcreco");
-    // Retrieve hit data product
-    auto ev_hit   = storage->get_data<event_hit>("gaushit");
     // Retrieve simch data product
     auto ev_simch = storage->get_data<event_simch>("largeant");
 
@@ -67,10 +67,53 @@ namespace larlite {
       return false;
     }
 
-    if (!ev_hit){
-      std::cout << "No hit data-product -> exit" << std::endl;
+    // grab showers and clusters associated to them
+    auto ev_shr                     = storage->get_data<event_shower>("showerreco");
+    larlite::event_pfpart*  ev_pfp  = nullptr;
+    larlite::event_cluster* ev_clus = nullptr;
+    larlite::event_hit*     ev_hit  = nullptr;
+
+    if (!ev_shr) {
+      std::cout << "No shower data-product -> exit" << std::endl;
+      return false;
+    }    
+
+    auto const& ass_shr_pfp_v = storage->find_one_ass(ev_shr->id(), ev_pfp, ev_shr->name());
+    
+    if (!ev_pfp) {
+      std::cout << "No pfp data-product -> exit" << std::endl;
       return false;
     }
+
+    auto const& ass_pfp_clus_v = storage->find_one_ass(ev_pfp->id(), ev_clus, ev_pfp->name());
+    
+    if (!ev_clus) {
+      std::cout << "No clus data-product -> exit" << std::endl;
+      return false;
+    } 
+    
+    auto const& ass_clus_hit_v = storage->find_one_ass(ev_clus->id(), ev_hit, ev_clus->name());
+
+    if (!ev_hit) {
+      std::cout << "No hit data-product -> exit" << std::endl;
+      return false;
+    } 
+
+    // find cluster indices associated with the various showers on the collection plane
+    std::vector< std::vector<size_t> > shower_hit_idx_v_v;
+    for (auto const& pfp_idx_v : ass_shr_pfp_v) {
+      std::vector<size_t> shr_hit_idx_v;
+      auto const& clus_idx_v = ass_pfp_clus_v[ pfp_idx_v[0] ];
+      for (auto const& clus_idx : clus_idx_v) {
+	auto const& hit_idx_v = ass_clus_hit_v[clus_idx];
+	for (auto const& hit_idx : hit_idx_v) {
+	  auto const& hit = ev_hit->at(hit_idx);
+	  if (hit.WireID().Plane == 2)
+	    shr_hit_idx_v.push_back( hit_idx );
+	}// for all hits in cluster
+      }// for all clusters associated to the shower
+      shower_hit_idx_v_v.push_back( shr_hit_idx_v );
+    }// for all showers
 
     // used track id vector
     std::vector<unsigned int> used_trk_id;
@@ -89,7 +132,6 @@ namespace larlite {
       
       // only keep showers form pi0 decay
       if (mcs.MotherPdgCode() != 111) continue;
-
 
       std::vector<unsigned int> id_v;
       id_v.reserve(mcs.DaughterTrackID().size());
@@ -130,12 +172,6 @@ namespace larlite {
 
     _angle = ev_mcs->at(mc_index_v[0]).Start().Momentum().Vect().Unit().Dot( ev_mcs->at(mc_index_v[1]).Start().Momentum().Vect().Unit() );
 
-    // reset charge integrators
-    _ehit0 = _qhit0 = _ehit1 = _qhit1 = 0;
-
-    _wmin0 = _wmin1 = 9000;
-    _wmax0 = _wmax1 = 0;
-
     // reset MCBTAlg
     _bt_algo.Reset(g4_trackid_v,*ev_simch);
 
@@ -147,6 +183,17 @@ namespace larlite {
     std::vector<larlite::geo::View_t> cluster_plane_v(cluster_hit_v.size(),
 						      larlite::geo::View_t::kUnknown);
 
+    std::cout << "There are " << shower_hit_idx_v_v.size() << " showers" << std::endl;
+
+
+    _qhit0 = _qhit1 = _ehit0 = _ehit0 = 0;
+
+    _chTickMap.clear();
+    _chTickMap = std::vector< std::vector< std::pair<int,int> > >(8500,std::vector<std::pair<int,int> >());
+    
+    _chIDEmap.clear();
+    _chIDEmap = std::vector< std::map<int,double> >(8500,std::map<int,double>());
+    
     // loop through hits, use the back-tracker to find which MCX object
     // it should belong to, and add that hit to the cluster that is
     // indended for that MCX object
@@ -177,35 +224,6 @@ namespace larlite {
       // further avoid duplication
       std::vector< std::pair<int,int> > timeinterval_v;
 
-      /*
-      bool duplicate = true;
-      int  tickstart, tickend;
-      for (int t = timeinterval.first; t< timeinterval.second; t++) {
-	if (_chIDEmap[ ch ].find( t ) != _chIDEmap[ ch ].end() ) {
-	  if (duplicate == false) { // end the hit
-	    tickend = t;
-	    timeinterval_v.push_back( std::make_pair(tickstart,tickend) );
-	    //std::cout << "adding new interval @ ch " << ch << " [ " << tickstart << ", " << tickend << " ]" << std::endl;
-	  }
-	  //std::cout << "found duplicate IDE @ ch " << ch << " @ tick " << t << std::endl;
-	  duplicate = true;
-	}
-	else {
-	  if (duplicate == true) {
-	    tickstart = t;
-	    duplicate = false;
-	  }
-	}
-	_chIDEmap[ ch ][ t ] = 1;	  
-      }
-
-      if (duplicate == false) {
-	tickend = timeinterval.second;
-	//std::cout << "adding final interval @ ch " << ch << " [ " << tickstart << ", " << tickend << " ]" << std::endl;
-	timeinterval_v.push_back( std::make_pair(tickstart,tickend) );
-      }
-      */
-      
       timeinterval_v.push_back( timeinterval );
 
       for (auto const& T : timeinterval_v) {
@@ -260,32 +278,121 @@ namespace larlite {
 	    if (ch > _wmax1) _wmax1 = ch;
 	  }
 
-	  _ch   = ch;
-	  _adc  = hit.Integral();
-	  _eshr = max_edep;
-	  _qshr = max_qdep;
-	  _eall = 0;
-	  _qall = 0;
-	  for (auto const& mce : mce_v)
-	    _eall += mce;
-	  for (auto const& mcq : mcq_v)
-	    _qall += mcq;
-	  
-	  _hit_tree->Fill();
-
 	}// if on collection plane
-
-	// if not, associate this hit with the appropriate cluster
-	// ( "i" is the hit index )
-	cluster_hit_v[ pl * mc_index_v.size() + idx ].push_back( hit_idx );
-	cluster_plane_v[ pl * mc_index_v.size() + idx ] = pl;
+	
 	
       }// for all found time-intervals
-
+      
     }// for all hits in cluster
-    
-    _tree->Fill();
 
+    // loop through clusters associated to showers on the collection plane
+    for (auto const& shr_hit_idx_v : shower_hit_idx_v_v) {
+
+      _chTickMap.clear();
+      _chTickMap = std::vector< std::vector< std::pair<int,int> > >(8500,std::vector<std::pair<int,int> >());
+      
+      _chIDEmap.clear();
+      _chIDEmap = std::vector< std::map<int,double> >(8500,std::map<int,double>());
+      
+      // reset charge integrators
+      _eclus0 = _qclus0 = _eclus1 = _qclus1 = 0;
+      
+      _wmin0 = _wmin1 = 9000;
+      _wmax0 = _wmax1 = 0;
+      
+      // loop through hits in cluster, use the back-tracker to find which MCX object
+      // it should belong to, and add that hit to the cluster that is
+      // indended for that MCX object
+      // only use hits from association to rawclusters
+      for (auto const& i : shr_hit_idx_v) {
+
+	auto const& hit_idx = i;
+	auto const& hit     = ev_hit->at(hit_idx);
+	auto const& ch      = hit.Channel();
+	auto const& tstart  = hit.PeakTime() - 2*hit.RMS();// + 2255;//3050;
+	auto const& tend    = hit.PeakTime() + 2*hit.RMS();// + 2255;//3050;
+	auto const& pl      = hit.View();
+	
+	// avoid duplicating time-intervals
+	std::pair<double,double> timeinterval = std::make_pair(tstart,tend);
+	
+	if (_avoid_duplicate_ticks)
+	  auto timeinterval = getTimeSubset(ch,(int)tstart,(int)tend);
+	
+	if (timeinterval.first >= timeinterval.second) {
+	  std::cout << "skipping hit " << std::endl;
+	  continue;
+	}
+	
+	_chTickMap[ch].push_back( timeinterval );
+	
+	// further avoid duplication
+	std::vector< std::pair<int,int> > timeinterval_v;
+	
+	timeinterval_v.push_back( timeinterval );
+	
+	for (auto const& T : timeinterval_v) {
+	  
+	  // create a wire-range object with channel + (start,end) time info for the hit
+	  ::btutil::WireRange_t wr(ch,T.first,T.second);
+	  // use the back-tracker to return a vector of track IDs associated to this hit
+	  // contents of return vector are proportional to the fraction of the hit's
+	  // charge that is associated with the MCX id at that element's position
+	  // vector ordered such that
+	  // mcq_v [ index ] corresponds to index wihtin mc_index_v
+	  auto mcq_v = _bt_algo.MCQ(wr);
+	  // grab the same information but for the deposied energy
+	  auto mce_v = _bt_algo.MCE(wr);
+	  // find entry with largest value -> this lets us know which MCX object
+	  // to assign this hit to and thus which cluster this hit should
+	  // be associated with
+	  size_t idx  = 0;
+	  double max_edep = 0;
+	  for (size_t j=0; j < mcq_v.size(); j++){
+	    if (mcq_v[j] > max_edep){
+	      max_edep = mce_v[j];
+	      idx  = j;
+	    }
+	  }
+	  double max_qdep = mcq_v[idx];
+	  //std::cout << "Edep for this hit : " << max_edep << " associated with idx " << idx << std::endl;
+	  // if the maximum amount of charge is 0
+	  // ignore this hit
+	  if (max_edep == 0)
+	    continue;
+	  // if the idx found is == to mcq_v.size() - 1
+	  // this means that most of the charge belongs to 
+	  // none of the MCX objects we are interested in
+	  // -> ignore this hit
+	  if ( idx == mcq_v.size() -1 )
+	    continue;
+	  
+	  if (pl == 2) {
+
+	    if (shrmapidx[idx] == 0) {
+	      _eclus0 += max_edep;
+	      _qclus0 += max_qdep;
+	      if (ch < _wmin0) _wmin0 = ch;
+	      if (ch > _wmax0) _wmax0 = ch;
+	    }
+
+	    if (shrmapidx[idx] == 1) {
+	      _eclus1 += max_edep;
+	      _qclus1 += max_qdep;
+	      if (ch < _wmin1) _wmin1 = ch;
+	      if (ch > _wmax1) _wmax1 = ch;
+	    }
+
+	  }// if on collection plane
+	  
+	}// for all found time-intervals
+	
+      }// for all hits in cluster
+
+      _tree->Fill();
+
+    }// for all showers
+    
     if (!_save_clusters) return true;
 
     // Retrieve cluster data product (output)
@@ -327,7 +434,7 @@ namespace larlite {
     return true;
   }
 
-  bool Pi0HitThresholdStudies::finalize() {
+  bool Pi0ClusteringStudies::finalize() {
 
     if (_fout) _fout->cd();
     if (_tree) _tree->Write();
@@ -337,7 +444,7 @@ namespace larlite {
   }
 
 
-  std::pair<int,int> Pi0HitThresholdStudies::getTimeSubset(const int& ch,const int& tstart,const int& tend) {
+  std::pair<int,int> Pi0ClusteringStudies::getTimeSubset(const int& ch,const int& tstart,const int& tend) {
 
     if (_chTickMap[ ch ].size() == 0) {
       std::pair<int,int> tpair = std::make_pair(tstart,tend);

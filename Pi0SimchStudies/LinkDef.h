@@ -10,6 +10,7 @@
 #pragma link off all functions;
 
 #pragma link C++ class larlite::Pi0HitThresholdStudies+;
+#pragma link C++ class larlite::Pi0ClusteringStudies+;
 //ADD_NEW_CLASS ... do not change this line
 #endif
 

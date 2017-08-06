@@ -104,6 +104,8 @@ namespace larlite {
     double _rl,_rh; // low and hgh conversion distances
     double _rc0x, _rc0y, _rc0z, _rc1x, _rc1y, _rc1z;
     double _mc0x, _mc0y, _mc0z, _mc1x, _mc1y, _mc1z;
+    double _dedx0, _dedx1;
+    double _pitch0, _pitch1;
     double _angle0, _angle1;
     double _d0, _d1;
     double _rce0, _rce1, _mce0, _mce1, _mcedep0, _mcedep1;

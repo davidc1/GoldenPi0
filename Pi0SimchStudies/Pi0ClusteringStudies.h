@@ -1,9 +1,9 @@
 /**
- * \file Pi0HitThresholdStudies.h
+ * \file Pi0ClusteringStudies.h
  *
  * \ingroup Pi0SimchStudies
  * 
- * \brief Class def header for a class Pi0HitThresholdStudies
+ * \brief Class def header for a class Pi0ClusteringStudies
  *
  * @author dcaratelli
  */
@@ -12,8 +12,8 @@
 
     @{*/
 
-#ifndef LARLITE_PI0HITTHRESHOLDSTUDIES_H
-#define LARLITE_PI0HITTHRESHOLDSTUDIES_H
+#ifndef LARLITE_PI0CLUSTERINGSTUDIES_H
+#define LARLITE_PI0CLUSTERINGSTUDIES_H
 
 #include "Analysis/ana_base.h"
 
@@ -25,21 +25,21 @@
 
 namespace larlite {
   /**
-     \class Pi0HitThresholdStudies
+     \class Pi0ClusteringStudies
      User custom analysis class made by SHELL_USER_NAME
    */
-  class Pi0HitThresholdStudies : public ana_base{
+  class Pi0ClusteringStudies : public ana_base{
   
   public:
 
     /// Default constructor
-    Pi0HitThresholdStudies()
+    Pi0ClusteringStudies()
       : _tree(nullptr)
       , _hit_tree(nullptr)
-      { _name="Pi0HitThresholdStudies"; _fout=0;}
+      { _name="Pi0ClusteringStudies"; _fout=0;}
 
     /// Default destructor
-    virtual ~Pi0HitThresholdStudies(){}
+    virtual ~Pi0ClusteringStudies(){}
 
     virtual bool initialize();
 
@@ -66,8 +66,8 @@ namespace larlite {
     std::string _cluster_producer;
 
     TTree* _tree;
-    double _etrue0, _edep0, _qcol0, _ehit0, _qhit0, _ahit0;
-    double _etrue1, _edep1, _qcol1, _ehit1, _qhit1, _ahit1;
+    double _etrue0, _edep0, _qcol0, _ehit0, _qhit0, _ahit0, _eclus0, _qclus0;
+    double _etrue1, _edep1, _qcol1, _ehit1, _qhit1, _ahit1, _eclus1, _qclus1;
     double _angle;
     int    _wmin0, _wmax0, _wmin1, _wmax1;
     
