@@ -31,8 +31,8 @@ ana = fmwk.SaveSel2VtxTrkMCC82()
 ana.SetVerbose(False)
 my_proc.add_process(ana)
 
-#my_proc.set_data_to_write(fmwk.data.kVertex,'numuCC_vertex')
-#my_proc.set_data_to_write(fmwk.data.kTrack, 'numuCC_track')
+my_proc.set_data_to_write(fmwk.data.kVertex,'numuCC_vertex')
+my_proc.set_data_to_write(fmwk.data.kTrack, 'numuCC_track')
 
 print
 print  "Finished configuring ana_processor. Start event loop!"
