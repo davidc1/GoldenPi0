@@ -101,6 +101,10 @@ namespace larlite {
     _tree->Branch("mcedep0",&_mcedep0,"mcedep0/D");
     _tree->Branch("mcedep1",&_mcedep1,"mcedep1/D");
 
+    // distance to wall
+    _tree->Branch("dwall0",&_dwall0,"dwall0/D");
+    _tree->Branch("dwall1",&_dwall1,"dwall1/D");
+
     // true pi0 information
     _tree->Branch("pi0px",&_pi0px,"pi0px/D");
     _tree->Branch("pi0py",&_pi0py,"pi0py/D");
@@ -160,8 +164,7 @@ namespace larlite {
 
     std::vector<larlite::mcshower> pi0_gamma_v;
 
-    auto ev_shr = storage->get_data<event_shower>("showerreco");
-    auto ev_trk = storage->get_data<event_track> ("pi0reco");
+    auto ev_shr = storage->get_data<event_shower>(_shr_producer);
     auto ev_vtx = storage->get_data<event_vertex>(_vtx_producer);
     auto ev_mcs = storage->get_data<event_mcshower>("mcreco");
     auto ev_mct = storage->get_data<event_mctruth>("generator");
@@ -350,6 +353,18 @@ namespace larlite {
 
 	_dedx0 = shr0.dEdx_v().at(2);
 	_dedx1 = shr1.dEdx_v().at(2);
+
+	auto HL0  = geoalgo::HalfLine( rc0strt, rc0dir);
+	auto pts0 = _geoAlgo.Intersection(HL0,_TPC);
+	_dwall0 = 1036.;
+	if (pts0.size() == 1)
+	  _dwall0 = pts0[0].Dist( HL0.Start() );
+
+	auto HL1  = geoalgo::HalfLine( rc1strt, rc1dir);
+	auto pts1 = _geoAlgo.Intersection(HL1,_TPC);
+	_dwall1 = 1036.;
+	if (pts1.size() == 1)
+	  _dwall1 = pts1[0].Dist( HL1.Start() );
 
 	auto geomH = larutil::GeometryHelper::GetME();
 	_pitch0    = geomH->GetPitch( shr0.Direction(), 2);

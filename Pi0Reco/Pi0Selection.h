@@ -50,6 +50,7 @@ namespace larlite {
     virtual bool finalize();
 
     void setVtxProducer(std::string s) { _vtx_producer = s; }
+    void setShrProducer(std::string s) { _shr_producer = s; }
     void setEMin(double emin) { _emin = emin; }
     void setRadLenMax(double l) { _radlenmax = l; }
     void setIPMax(double ip) { _ipmax = ip; }
@@ -73,7 +74,7 @@ namespace larlite {
     // create pair-combinatorics
     const std::vector< std::pair<size_t,size_t> > Combinatorics(const std::vector<size_t> idx_v);
 
-    std::string _vtx_producer;
+    std::string _vtx_producer, _shr_producer;
 
     // reconstructed and true vertex coordinates
     ::geoalgo::Point_t _rcvtx, _mcvtx;
@@ -127,7 +128,7 @@ namespace larlite {
     double _mcedep;
     double _anglediff;
     double _rcx, _rcy, _rcz, _rcpx, _rcpy, _rcpz;
-    double _dwall;
+    double _dwall, _dwall0, _dwall1;
 
     ::geoalgo::AABox_t _TPC;
 
