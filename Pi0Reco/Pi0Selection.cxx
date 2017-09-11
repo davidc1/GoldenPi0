@@ -251,7 +251,7 @@ namespace larlite {
     if (selected_shower_idx_v.size() >= 2) {
     
       // get shower-pair combinatorics
-      auto shr_pairs_idx_v = Combinatorics( selected_shower_idx_v );
+      auto shr_pairs_idx_v = Combinatorics( selected_shower_idx_v, ev_shr );
       
       for (size_t pidx = 0; pidx < shr_pairs_idx_v.size(); pidx++ ) {
 	
@@ -494,13 +494,16 @@ namespace larlite {
     return filtered_shower_idx_v;
   }
 
-  const std::vector< std::pair<size_t,size_t> > Pi0Selection::Combinatorics(const std::vector<size_t> idx_v) {
-
+  const std::vector< std::pair<size_t,size_t> > Pi0Selection::Combinatorics(const std::vector<size_t> idx_v,
+									    const larlite::event_shower* shr_v) {
+    
     std::vector< std::pair<size_t, size_t> > shr_pairs;
-
+    
     for (size_t i=0; i < idx_v.size(); i++) {
       for (size_t j=i+1; j < idx_v.size(); j++) {
-	shr_pairs.push_back( std::make_pair(i,j) );
+	// at least one shower must have more energy than minimum large shower energy
+	if ( (shr_v->at(i).Energy() > _ehighmin) || (shr_v->at(j).Energy() > _ehighmin) )
+	  shr_pairs.push_back( std::make_pair(i,j) );
       }
     }
 

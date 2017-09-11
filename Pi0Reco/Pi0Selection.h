@@ -52,6 +52,7 @@ namespace larlite {
     void setVtxProducer(std::string s) { _vtx_producer = s; }
     void setShrProducer(std::string s) { _shr_producer = s; }
     void setEMin(double emin) { _emin = emin; }
+    void setEHighMin(double e) { _ehighmin = e; }
     void setRadLenMax(double l) { _radlenmax = l; }
     void setIPMax(double ip) { _ipmax = ip; }
     void setAngleMin(double amin) { _anglemin = amin; }
@@ -72,7 +73,8 @@ namespace larlite {
     const std::vector<size_t> FilterShowers(const larlite::event_shower* shr_v);
 
     // create pair-combinatorics
-    const std::vector< std::pair<size_t,size_t> > Combinatorics(const std::vector<size_t> idx_v);
+    const std::vector< std::pair<size_t,size_t> > Combinatorics(const std::vector<size_t> idx_v,
+								const larlite::event_shower* shr_v);
 
     std::string _vtx_producer, _shr_producer;
 
@@ -86,6 +88,8 @@ namespace larlite {
 
     /// minimum shower energy
     double _emin;
+    /// minimum energy for larger shower
+    double _ehighmin;
     /// maximum radiation length
     double _radlenmax;
     /// maximum IP allowed
