@@ -247,7 +247,7 @@ namespace larlite {
     // if we have at least 2 shower candidates:
     // but no more than 3
     if ( (selected_shower_idx_v.size() >= 2) and (selected_shower_idx_v.size() <= 3)) {
-      
+
       // get shower-pair combinatorics
       auto shr_pairs_idx_v = Combinatorics( selected_shower_idx_v, ev_shr );
       
@@ -305,6 +305,7 @@ namespace larlite {
 	
       }// for all shower-pairs
 
+      _mass = -1;
       
       if (bestPair != -1) {
 
@@ -379,7 +380,7 @@ namespace larlite {
       }// if a pi0 was reconstructed
       
     }// if a shower-pair was found
-    
+
     _tree->Fill();
     
     return true;
@@ -520,6 +521,7 @@ namespace larlite {
     _rchx = srt2[0];
     _rchy = srt2[1];
     _rchz = srt2[2];
+
     _pitchh = geomH->GetPitch( shr2.Direction(), 2);
     _pitchl = geomH->GetPitch( shr1.Direction(), 2);
     
@@ -531,9 +533,7 @@ namespace larlite {
     _ehc = _eh * ContainmentCorr(_dwallh);
     _elc = _el * ContainmentCorr(_dwalll);
     _massc = _mass * sqrt( ContainmentCorr(_dwallh) * ContainmentCorr(_dwalll) );
-    
-    //_tree->Fill();
-    
+
     return;
   }
 
