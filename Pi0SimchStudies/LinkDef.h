@@ -11,6 +11,7 @@
 
 #pragma link C++ class larlite::Pi0HitThresholdStudies+;
 #pragma link C++ class larlite::Pi0ClusteringStudies+;
+#pragma link C++ class larlite::Pi0dEdx+;
 //ADD_NEW_CLASS ... do not change this line
 #endif
 
