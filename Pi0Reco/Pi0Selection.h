@@ -69,6 +69,9 @@ namespace larlite {
     std::vector< std::pair<size_t,size_t> > MCRCMatch(const std::vector<larlite::shower>& shr_v,
 						      const std::vector<larlite::mcshower>& mcs_v);
 
+    // fill tree
+    void FillTree(const larlite::shower& shr1, const larlite::shower& shr2);
+
     // filter out showers based on various cuts
     const std::vector<size_t> FilterShowers(const larlite::event_shower* shr_v);
 
@@ -104,16 +107,19 @@ namespace larlite {
     TTree *_tree;
     double _ip;
     double _angle;
-    double _mass;
-    double _el,_eh; // low and high shower energies
-    double _rl,_rh; // low and hgh conversion distances
-    double _rc0x, _rc0y, _rc0z, _rc1x, _rc1y, _rc1z;
-    double _mc0x, _mc0y, _mc0z, _mc1x, _mc1y, _mc1z;
-    double _dedx0, _dedx1;
-    double _pitch0, _pitch1;
-    double _angle0, _angle1;
-    double _d0, _d1;
-    double _rce0, _rce1, _mce0, _mce1, _mcedep0, _mcedep1;
+    double _mass, _massc;
+    double _el, _eh; // low and high shower energies
+    double _elc, _ehc; // after containment correction
+    double _rl, _rh; // low and hgh conversion distances
+    // start point of reconstructed showers
+    double _rchx, _rchy, _rchz, _rclx, _rcly, _rclz;
+    // start point of truth showers
+    double _mchx, _mchy, _mchz, _mclx, _mcly, _mclz;
+    double _dedxh, _dedxl;
+    double _pitchh, _pitchl;
+    double _anglediffh, _anglediffl;
+    double _dwallh, _dwalll;
+    double _mcel, _mceh, _mcedepl, _mcedeph;
     int    _npi0;   // number of pi0s coming out of the interaction
     int    _ngamma; // number of showers coming out of the interaction
     double _pi0px, _pi0py, _pi0pz;
@@ -123,6 +129,7 @@ namespace larlite {
     double _ipvtx;
     int    _nrecoshr, _nrecoshrcut;
     int    _run, _sub, _evt, _ctr;
+    ::geoalgo::Point_t _rcldir, _rchdir;
 
     TTree *_pi0_tree;
 
