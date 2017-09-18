@@ -36,7 +36,7 @@ namespace larlite {
     Pi0ClusteringStudies()
       : _tree(nullptr)
       , _hit_tree(nullptr)
-      { _name="Pi0ClusteringStudies"; _fout=0;}
+    { _name="Pi0ClusteringStudies"; _fout=0; _debug = false; }
 
     /// Default destructor
     virtual ~Pi0ClusteringStudies(){}
@@ -50,6 +50,7 @@ namespace larlite {
     void setClusterProducer(std::string s) { _cluster_producer = s; }
     void SaveClusters(bool on) { _save_clusters = on; }
     void AvoidDuplicateHits(bool on) { _avoid_duplicate_ticks = on; }
+    void setDebug(bool on) { _debug = on; }
 
   protected:
 
@@ -66,9 +67,10 @@ namespace larlite {
     std::string _cluster_producer;
 
     TTree* _tree;
-    double _etrue0, _edep0, _qcol0, _ehit0, _qhit0, _ahit0, _eclus0, _qclus0;
-    double _etrue1, _edep1, _qcol1, _ehit1, _qhit1, _ahit1, _eclus1, _qclus1;
+    double _etrue0, _edep0, _qcol0, _ehit0, _qhit0, _ahit0, _eclus0, _qclus0, _aclus0;
+    double _etrue1, _edep1, _qcol1, _ehit1, _qhit1, _ahit1, _eclus1, _qclus1, _aclus1;
     double _angle;
+    int    _nshrs;
     int    _wmin0, _wmax0, _wmin1, _wmax1;
     
     TTree* _hit_tree;
@@ -79,6 +81,8 @@ namespace larlite {
 
     // map linking channel to ide.Energy for each channel
     std::vector< std::map< int, double> > _chIDEmap;
+
+    bool _debug;
     
   };
 }

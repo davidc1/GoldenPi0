@@ -30,18 +30,9 @@ my_proc.set_output_file("larlite_mccluster.root")
 
 ana = fmwk.Pi0ClusteringStudies()
 ana.SaveClusters(False)
-ana.AvoidDuplicateHits(False)
+ana.AvoidDuplicateHits(True)
+ana.setDebug(False)
 my_proc.add_process(ana)
-
-#my_proc.set_data_to_write(fmwk.data.kMCShower,    "mcreco"        )
-#my_proc.set_data_to_write(fmwk.data.kMCTrack,     "mcreco"        )
-#my_proc.set_data_to_write(fmwk.data.kMCTruth,     "generator"     )
-#my_proc.set_data_to_write(fmwk.data.kVertex,      "mcvertex"      )
-#my_proc.set_data_to_write(fmwk.data.kCluster,     "pandoraCosmic" )
-#my_proc.set_data_to_write(fmwk.data.kAssociation, "pandoraCosmic" )
-#my_proc.set_data_to_write(fmwk.data.kHit,         "gaushit"       )
-
-#my_proc.set_data_to_write(fmwk.data.kVertex,'mcvertex')
 
 print
 print  "Finished configuring ana_processor. Start event loop!"

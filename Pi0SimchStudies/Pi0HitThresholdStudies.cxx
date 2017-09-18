@@ -165,7 +165,7 @@ namespace larlite {
       std::pair<double,double> timeinterval = std::make_pair(tstart,tend);
 
       if (_avoid_duplicate_ticks)
-	auto timeinterval = getTimeSubset(ch,(int)tstart,(int)tend);
+	timeinterval = getTimeSubset(ch,(int)tstart,(int)tend);
 
       if (timeinterval.first >= timeinterval.second) {
 	std::cout << "skipping hit " << std::endl;

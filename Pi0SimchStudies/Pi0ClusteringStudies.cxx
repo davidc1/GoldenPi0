@@ -22,6 +22,7 @@ namespace larlite {
     _tree->Branch("_qcol0", &_qcol0, "qcol0/D" );
     _tree->Branch("_eclus0", &_eclus0, "eclus0/D" );
     _tree->Branch("_qclus0", &_qclus0, "qclus0/D" );
+    _tree->Branch("_aclus0", &_aclus0, "aclus0/D" );
     _tree->Branch("_ehit0", &_ehit0, "ehit0/D" );
     _tree->Branch("_qhit0", &_qhit0, "qhit0/D" );
 
@@ -30,6 +31,7 @@ namespace larlite {
     _tree->Branch("_qcol1", &_qcol1, "qcol1/D" );
     _tree->Branch("_eclus1", &_eclus1, "eclus1/D" );
     _tree->Branch("_qclus1", &_qclus1, "qclus1/D" );
+    _tree->Branch("_aclus1", &_aclus1, "aclus1/D" );
     _tree->Branch("_ehit1", &_ehit1, "ehit1/D" );
     _tree->Branch("_qhit1", &_qhit1, "qhit1/D" );
 
@@ -39,6 +41,7 @@ namespace larlite {
     _tree->Branch("_wmax1",&_wmax1,"wmax1/I");
 
     _tree->Branch("_angle", &_angle, "angle/D" );
+    _tree->Branch("_nshrs", &_nshrs, "nshrs/I" );
 
     if (_hit_tree) delete _hit_tree;
     _hit_tree = new TTree("hit_tree","hit tree");
@@ -183,9 +186,6 @@ namespace larlite {
     std::vector<larlite::geo::View_t> cluster_plane_v(cluster_hit_v.size(),
 						      larlite::geo::View_t::kUnknown);
 
-    std::cout << "There are " << shower_hit_idx_v_v.size() << " showers" << std::endl;
-
-
     _qhit0 = _qhit1 = _ehit0 = _ehit0 = 0;
 
     _chTickMap.clear();
@@ -212,10 +212,10 @@ namespace larlite {
       std::pair<double,double> timeinterval = std::make_pair(tstart,tend);
 
       if (_avoid_duplicate_ticks)
-	auto timeinterval = getTimeSubset(ch,(int)tstart,(int)tend);
+	timeinterval = getTimeSubset(ch,(int)tstart,(int)tend);
 
       if (timeinterval.first >= timeinterval.second) {
-	std::cout << "skipping hit " << std::endl;
+	//std::cout << "skipping hit " << std::endl;
 	continue;
       }
 
@@ -279,26 +279,31 @@ namespace larlite {
 	  }
 
 	}// if on collection plane
+
+	cluster_hit_v[ pl * mc_index_v.size() + idx ].push_back( hit_idx );
+	cluster_plane_v[ pl * mc_index_v.size() + idx ] = pl;
 	
 	
       }// for all found time-intervals
       
     }// for all hits in cluster
 
+    _nshrs = shower_hit_idx_v_v.size();
+
+    _chTickMap.clear();
+    _chTickMap = std::vector< std::vector< std::pair<int,int> > >(8500,std::vector<std::pair<int,int> >());
+    
+    _chIDEmap.clear();
+    _chIDEmap = std::vector< std::map<int,double> >(8500,std::map<int,double>());
+    
+    // reset charge integrators
+    _eclus0 = _qclus0 = _eclus1 = _qclus1 = _aclus0 = _aclus1 = 0;
+    
+    _wmin0 = _wmin1 = 9000;
+    _wmax0 = _wmax1 = 0;
+    
     // loop through clusters associated to showers on the collection plane
     for (auto const& shr_hit_idx_v : shower_hit_idx_v_v) {
-
-      _chTickMap.clear();
-      _chTickMap = std::vector< std::vector< std::pair<int,int> > >(8500,std::vector<std::pair<int,int> >());
-      
-      _chIDEmap.clear();
-      _chIDEmap = std::vector< std::map<int,double> >(8500,std::map<int,double>());
-      
-      // reset charge integrators
-      _eclus0 = _qclus0 = _eclus1 = _qclus1 = 0;
-      
-      _wmin0 = _wmin1 = 9000;
-      _wmax0 = _wmax1 = 0;
       
       // loop through hits in cluster, use the back-tracker to find which MCX object
       // it should belong to, and add that hit to the cluster that is
@@ -317,10 +322,10 @@ namespace larlite {
 	std::pair<double,double> timeinterval = std::make_pair(tstart,tend);
 	
 	if (_avoid_duplicate_ticks)
-	  auto timeinterval = getTimeSubset(ch,(int)tstart,(int)tend);
+	  timeinterval = getTimeSubset(ch,(int)tstart,(int)tend);
 	
 	if (timeinterval.first >= timeinterval.second) {
-	  std::cout << "skipping hit " << std::endl;
+	  //std::cout << "skipping hit " << std::endl;
 	  continue;
 	}
 	
@@ -355,6 +360,9 @@ namespace larlite {
 	    }
 	  }
 	  double max_qdep = mcq_v[idx];
+
+	  if (_debug) std::cout << "hit idx : " << hit_idx << "  max Q associated : "<< max_qdep << std::endl << std::endl;
+
 	  //std::cout << "Edep for this hit : " << max_edep << " associated with idx " << idx << std::endl;
 	  // if the maximum amount of charge is 0
 	  // ignore this hit
@@ -372,6 +380,7 @@ namespace larlite {
 	    if (shrmapidx[idx] == 0) {
 	      _eclus0 += max_edep;
 	      _qclus0 += max_qdep;
+	      _aclus0 += hit.Integral();
 	      if (ch < _wmin0) _wmin0 = ch;
 	      if (ch > _wmax0) _wmax0 = ch;
 	    }
@@ -379,6 +388,7 @@ namespace larlite {
 	    if (shrmapidx[idx] == 1) {
 	      _eclus1 += max_edep;
 	      _qclus1 += max_qdep;
+	      _aclus1 += hit.Integral();
 	      if (ch < _wmin1) _wmin1 = ch;
 	      if (ch > _wmax1) _wmax1 = ch;
 	    }
@@ -414,6 +424,8 @@ namespace larlite {
     // num of hit requirement
     std::vector<std::vector<unsigned int> > cluster_hit_ass_v;
     for (size_t idx=0; idx < cluster_hit_v.size(); idx++){
+
+      if (cluster_hit_v[idx].size() == 0) continue;
 
       //std::cout << "saving cluster w/ "  << cluster_hit_v[idx].size() << std::endl;
       
@@ -454,24 +466,37 @@ namespace larlite {
     int startunique = tstart;
     int endunique   = tend;
 
+    if (_debug){
+      std::cout << "CHANNEL " << ch << std::endl;
+      std::cout << "\t start  [ " << startunique << ", " << endunique << " ]" << std::endl;
+    }
+
     //std::cout << "new interval @ channel "  << ch << " [ " << tstart << ", " << tend << " ]" << std::endl;
+
+    // already found intervals on this channel:
+    if (_debug) {
+      for (auto const& tpair : _chTickMap[ch] ) 
+	std::cout << "\t\t [ " << tpair.first << ", " << tpair.second << " ]" << std::endl;
+    }
 
     // found, let's eliminate time-intervals
     for (auto const& tpair : _chTickMap[ch] ) {
 
       if (tpair.first > tend) continue;
-
+      
       if (tpair.second < tstart) continue;
       
       // if interval fully contained in already scanned interval
       // return nothing
-      if ( (tstart > tpair.first) && (tend < tpair.second) )
-	return std::make_pair(0,0);
-
-      if ( (tstart > tpair.first) && (tstart < tpair.second) ) {
-	// only make interval smaller
-	if (tpair.second > startunique)
-	  startunique = tpair.second;
+      if ( (tstart > tpair.first) && (tend < tpair.second) ) {
+	if (_debug) { std::cout << "\t Fully contained. Return empy" << std::endl;
+	  return std::make_pair(0,0);
+	}
+	
+	if ( (tstart > tpair.first) && (tstart < tpair.second) ) 
+	  // only make interval smaller
+	  if (tpair.second > startunique)
+	    startunique = tpair.second;
       }
       
       if ( (tend > tpair.first) && (tend < tpair.second) ) {
@@ -481,14 +506,25 @@ namespace larlite {
       }
 
       // does the new it completely surround the old interval?
-      //if ( (tend >= tpair.second) && (tstart <= tpair.first) )
-      //std::cout << "Fully surrounded!" << std::endl;
+      if ( (tend >= tpair.second) && (tstart <= tpair.first) ) {
+	//std::cout << "Fully surrounded!" << std::endl;
+	// return empty pair
+	return std::make_pair(0,0);
+      }
+
     }// for all time intervals already saved
     
     //if ( (startunique != tstart) || (endunique != tend) )
     //std::cout << "time-interval @ channel " << ch << " changed from [ " << tstart << ", " << tend << " ]" 
     //<< " to [ " << startunique << ", " << endunique << " ]" << std::endl;
-    
+    if (_debug) {
+      std::cout << "\t return [ " << startunique << ", " << endunique << " ]";
+      if ( (startunique != tstart) || (endunique != tend) )
+	std::cout << " -> DIFFERENT!" << std::endl;
+      else 
+	std::cout << std::endl;
+    }
+      
     return std::make_pair(startunique,endunique);
     
   }
