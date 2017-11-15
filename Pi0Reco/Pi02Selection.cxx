@@ -78,6 +78,15 @@ namespace larlite {
     _pi0_tree->Branch("sub",&_sub,"sub/I");
     _pi0_tree->Branch("evt",&_evt,"evt/I");
     _pi0_tree->Branch("ctr",&_ctr,"ctr/I");
+
+    if (_tree) delete _tree;
+    _tree = new TTree("tree","tree");
+    _tree->Branch("_m0",&_m0,"m0/D");
+    _tree->Branch("_m1",&_m1,"m1/D");
+    _tree->Branch("run",&_run,"run/I");
+    _tree->Branch("sub",&_sub,"sub/I");
+    _tree->Branch("evt",&_evt,"evt/I");
+    _tree->Branch("ctr",&_ctr,"ctr/I");
     
     return true;
   }
@@ -213,7 +222,7 @@ namespace larlite {
 	
       }// for all shower-pairs
 
-      std::cout << "pairs : " << mass_v.size() << std::endl;
+      std::cout << "run : " << _run << "\t evt : " << _evt << "\t found " << mass_v.size() << " pairs" << std::endl;
 
       // if one pairs:
       if (mass_v.size() == 1) {
@@ -257,21 +266,29 @@ namespace larlite {
 	if ( (mm0 < mm1) && (mm0 < mm2) ) {
 	  pair0 = {0,1};
 	  pair1 = {2,3};
+	  _m0 = mass_v[0];
+	  _m1 = mass_v[5];
 	}
 
 	if ( (mm1 < mm0) && (mm1 < mm2) ) {
 	  pair0 = {0,2};
 	  pair1 = {1,3};
+	  _m0 = mass_v[1];
+	  _m1 = mass_v[4];
 	}
 
 	if ( (mm2 < mm1) && (mm2 < mm0) ) {
 	  pair0 = {0,3};
 	  pair1 = {1,2};
+	  _m0 = mass_v[2];
+	  _m1 = mass_v[3];
 	}
 
 	FillTree(ev_shr->at(pair0[0]),ev_shr->at(pair0[1]));
 	FillTree(ev_shr->at(pair1[0]),ev_shr->at(pair1[1]));
-	
+
+	_tree->Fill();
+
       }// if 6 pairs
 
     }// if at least 2 showers
@@ -298,11 +315,17 @@ namespace larlite {
 
       auto const& shr = shr_v->at(i);
 
-      if ( shr.Energy() < _emin) continue;
+      if ( shr.Energy() < _emin) {
+	std::cout << "\t energy :" << shr.Energy() << " -> skip" << std::endl;
+	continue;
+      }
 
       ::geoalgo::Point_t strt(shr.ShowerStart().X(),shr.ShowerStart().Y(),shr.ShowerStart().Z());
 
-      if ( strt.Dist( _rcvtx ) > _radlenmax ) continue;
+      if ( strt.Dist( _rcvtx ) > _radlenmax ) {
+	std::cout << "\t radlen :" << strt.Dist(_rcvtx) << " -> skip" << std::endl;
+	continue;
+      }
 
       filtered_shower_idx_v.push_back( i );
 
@@ -311,7 +334,7 @@ namespace larlite {
     return filtered_shower_idx_v;
   }
 
-
+    
   void Pi02Selection::FillTree(const larlite::shower& shr1, const larlite::shower& shr2) {
 
     // transform into half-line objects

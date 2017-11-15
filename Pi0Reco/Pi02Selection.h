@@ -134,6 +134,8 @@ namespace larlite {
 
     // apply containmnent correction
     bool _containmentcorrection;
+
+    double _m0, _m1; // mass of pair of pi0s if 2 are reconstructed
     
   };
 }
